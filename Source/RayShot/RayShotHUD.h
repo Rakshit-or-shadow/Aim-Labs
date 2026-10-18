@@ -28,6 +28,10 @@ private:
     UPROPERTY()
     TObjectPtr<UFont> MonoFont;
 
+    // font copies made at exact sizes (key = size * 2 + mono), so text is crisp
+    UPROPERTY()
+    TMap<int32, TObjectPtr<UFont>> SizedFonts;
+
     // ---------- one function per screen ----------
     void DrawPlaying(ARayShotGameMode* GameMode, ATargetManager* Manager);
     void DrawMainMenu(ARayShotGameMode* GameMode);
@@ -57,7 +61,8 @@ private:
                        float PixelSize, float AlignX = 0.0f, bool bMono = false);
     FVector2D MeasureText(const FString& Text, float PixelSize, bool bMono = false);
     UFont* GetFont(bool bMono) const;
-    float GetTextScale(UFont* Font, float PixelSize) const;
+    // returns a copy of the font made at the right size (so text is sharp, not stretched)
+    UFont* GetSizedFont(bool bMono, float PixelSize, float& OutScale);
 
     // converts a size designed for 1080p to the real screen size
     float Px(float Value) const { return Value * UIScale; }

@@ -707,19 +707,51 @@ UFont* ARayShotHUD::GetFont(bool bMono) const
     return GEngine ? GEngine->GetLargeFont() : nullptr;
 }
 
-float ARayShotHUD::GetTextScale(UFont* Font, float PixelSize) const
+UFont* ARayShotHUD::GetSizedFont(bool bMono, float PixelSize, float& OutScale)
 {
-    // fonts have a "native" size; scale it so the text is PixelSize tall at 1080p
-    int32 NativeSize = (Font && Font->LegacyFontSize > 0) ? Font->LegacyFontSize : 24;
-    return PixelSize * UIScale / NativeSize;
+    // WHY: Unreal's HUD draws a font at its built-in "LegacyFontSize" and then STRETCHES
+    // the letters to the size we ask for. Stretching 24px letters to 120px makes them blurry.
+    // FIX: make a copy of the font whose built-in size IS the size we need, and draw it
+    // at scale 1. The letters are then rendered sharp at the real size.
+
+    UFont* BaseFont = GetFont(bMono);
+    float TargetSize = PixelSize * UIScale; // real size on this screen
+    if (BaseFont == nullptr)
+    {
+        OutScale = 1.0f;
+        return nullptr;
+    }
+
+    // round to "buckets" so animated text (countdown) doesn't create a new font every frame
+    int32 Step = (TargetSize > 48.0f) ? 4 : 1;
+    int32 Bucket = FMath::Clamp(FMath::RoundToInt(TargetSize / Step) * Step, 4, 1000);
+
+    // one cached copy per size (and per regular / mono font)
+    int32 Key = Bucket * 2 + (bMono ? 1 : 0);
+    UFont* SizedFont = nullptr;
+    if (TObjectPtr<UFont>* Found = SizedFonts.Find(Key))
+    {
+        SizedFont = *Found;
+    }
+    else
+    {
+        SizedFont = DuplicateObject<UFont>(BaseFont, this);
+        SizedFont->LegacyFontSize = Bucket;
+        SizedFonts.Add(Key, SizedFont);
+    }
+
+    // tiny leftover scale (at most a few %) from the rounding - not visible
+    OutScale = TargetSize / Bucket;
+    return SizedFont;
 }
 
 FVector2D ARayShotHUD::MeasureText(const FString& Text, float PixelSize, bool bMono)
 {
-    UFont* Font = GetFont(bMono);
+    float Scale = 1.0f;
+    UFont* Font = GetSizedFont(bMono, PixelSize, Scale);
     float Width = 0.0f;
     float Height = 0.0f;
-    GetTextSize(Text, Width, Height, Font, GetTextScale(Font, PixelSize));
+    GetTextSize(Text, Width, Height, Font, Scale);
     return FVector2D(Width, Height);
 }
 
@@ -731,13 +763,16 @@ void ARayShotHUD::DrawLabel(const FString& Text, float X, float Y, FLinearColor 
         return;
     }
 
-    UFont* Font = GetFont(bMono);
-    float Scale = GetTextScale(Font, PixelSize);
+    float Scale = 1.0f;
+    UFont* Font = GetSizedFont(bMono, PixelSize, Scale);
 
     float Width = 0.0f;
     float Height = 0.0f;
     GetTextSize(Text, Width, Height, Font, Scale);
-    float DrawX = X - Width * AlignX;
+
+    // snap to whole pixels - text between pixels looks soft
+    float DrawX = FMath::RoundToFloat(X - Width * AlignX);
+    Y = FMath::RoundToFloat(Y);
 
     // soft drop shadow for readability
     if (bShadow)
@@ -755,19 +790,22 @@ void ARayShotHUD::DrawGlowLabel(const FString& Text, float X, float Y, FLinearCo
         return;
     }
 
-    UFont* Font = GetFont(bMono);
-    float Scale = GetTextScale(Font, PixelSize);
+    float Scale = 1.0f;
+    UFont* Font = GetSizedFont(bMono, PixelSize, Scale);
 
     float Width = 0.0f;
     float Height = 0.0f;
     GetTextSize(Text, Width, Height, Font, Scale);
-    float DrawX = X - Width * AlignX;
 
-    // glow: the text drawn faintly in a circle around itself, in two rings
-    FLinearColor Glow = RayShotStyle::WithAlpha(GlowColor, 0.10f * Color.A);
+    // snap to whole pixels - text between pixels looks soft
+    float DrawX = FMath::RoundToFloat(X - Width * AlignX);
+    Y = FMath::RoundToFloat(Y);
+
+    // glow: the text drawn faintly in a circle around itself, in two tight rings
+    FLinearColor Glow = RayShotStyle::WithAlpha(GlowColor, 0.09f * Color.A);
     for (int32 Ring = 1; Ring <= 2; Ring++)
     {
-        float Radius = Px(3.0f * Ring);
+        float Radius = Px(2.0f * Ring);
         for (int32 i = 0; i < 8; i++)
         {
             float Angle = i * PI / 4.0f;
