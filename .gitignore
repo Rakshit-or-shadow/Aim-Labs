@@ -1,0 +1,25 @@
+# ---------- Unreal build output (huge, regenerated automatically) ----------
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# ---------- per-user editor folders ----------
+Content/Developers/
+Content/Collections/
+
+# ---------- IDE files (regenerated from RayShot.uproject) ----------
+.vs/
+.vscode/
+.idea/
+*.sln
+*.VC.db
+*.opensdf
+*.sdf
+*.suo
+*.xcworkspace
+
+# ---------- OS junk ----------
+.DS_Store
+Thumbs.db
+desktop.ini

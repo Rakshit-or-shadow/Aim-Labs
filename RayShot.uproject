@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "RayShot - an aim trainer that uses my own ray-sphere intersection code for hit detection.",
+	"Modules": [
+		{
+			"Name": "RayShot",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
