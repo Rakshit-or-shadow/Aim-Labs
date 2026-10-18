@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # RayShot
 
 **An aim trainer built in Unreal Engine 5, where every shot is checked by the ray-sphere intersection code from my own C ray tracer.**
@@ -161,3 +162,6 @@ Unreal Engine and its built-in content are property of Epic Games and are covere
 
 **Rakshit Singh**, Computing Science, University of Alberta
 GitHub: [@Rakshit-or-shadow](https://github.com/Rakshit-or-shadow)
+=======
+# Aim-Labs
+>>>>>>> 4877e462df50777c6fcfc8e3f346b2fd512f2e65
