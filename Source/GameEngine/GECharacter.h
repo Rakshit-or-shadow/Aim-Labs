@@ -113,6 +113,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GE|Movement")
 	bool IsSpeedReadoutVisible() const { return bShowSpeedReadout; }
 
+	/** The weapon logic component (Phase 2). */
+	UFUNCTION(BlueprintPure, Category = "GE|Weapon")
+	class UGEWeaponComponent* GetWeaponComponent() const { return Weapons; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -152,6 +156,33 @@ private:
 	TObjectPtr<class UInputAction> SpeedReadoutAction;
 	UPROPERTY(Transient)
 	TObjectPtr<class UInputMappingContext> GEMappingContext;
+
+	/** Weapon input actions (Phase 2). Slots 1-5 are in WeaponSlotActions. */
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> FireAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> AimAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> ReloadAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> WheelUpAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> WheelDownAction;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<class UInputAction>> WeaponSlotActions;
+
+	void FirePressed();
+	void FireReleased();
+	void AimPressed();
+	void AimReleased();
+	void ReloadPressed();
+	void WheelUp();
+	void WheelDown();
+	void SelectSlot(int32 Index);
+
+	/** Owns ammo, spread, recoil, firing and the viewmodel. */
+	UPROPERTY(VisibleAnywhere, Category = "GE|Weapon")
+	TObjectPtr<class UGEWeaponComponent> Weapons;
 
 	/** The BP camera, found by name "FirstPersonCamera". */
 	UPROPERTY(Transient)

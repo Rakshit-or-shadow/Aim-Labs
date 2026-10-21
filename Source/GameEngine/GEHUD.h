@@ -53,7 +53,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Crosshair")
 	FGECrosshairSettings Crosshair;
 
+	/** Seconds the hit marker stays on screen. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|HUD")
+	float HitMarkerDuration = 0.25f;
+
 private:
+	void DrawWeaponInfo(const class UGEWeaponComponent& Weapon);
+	void DrawHitMarker(const class UGEWeaponComponent& Weapon, float CX, float CY);
+	void DrawScope(float CX, float CY);
+
 	/** Draws one filled rectangle plus its outline behind it. */
 	void DrawOutlinedRect(float X, float Y, float W, float H);
 };

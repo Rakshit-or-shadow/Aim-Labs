@@ -1,4 +1,5 @@
 #include "GECharacter.h"
+#include "GEWeaponComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
@@ -15,6 +16,8 @@ AGECharacter::AGECharacter()
 
 	// Allow crouching, then apply the movement numbers.
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+
+	Weapons = CreateDefaultSubobject<UGEWeaponComponent>(TEXT("GEWeapons"));
 	ApplyMovementSettings();
 }
 
@@ -56,6 +59,10 @@ void AGECharacter::BeginPlay()
 	if (CameraComponent)
 	{
 		BaseCameraZ = CameraComponent->GetRelativeLocation().Z;
+	}
+	if (Weapons)
+	{
+		Weapons->Init(Cast<UCameraComponent>(CameraComponent));
 	}
 
 	CurrentHealth = Stats.MaxHealth;
@@ -125,6 +132,25 @@ void AGECharacter::CreateRuntimeInput()
 	GEMappingContext->MapKey(WalkAction, EKeys::LeftShift);
 	GEMappingContext->MapKey(CrouchAction, EKeys::LeftControl);
 	GEMappingContext->MapKey(SpeedReadoutAction, EKeys::F3);
+
+	// Weapons: LMB fire, RMB aim (hold), R reload, 1-5 slots, mouse wheel cycles.
+	FireAction = NewObject<UInputAction>(this, TEXT("GE_Fire"));
+	AimAction = NewObject<UInputAction>(this, TEXT("GE_Aim"));
+	ReloadAction = NewObject<UInputAction>(this, TEXT("GE_Reload"));
+	WheelUpAction = NewObject<UInputAction>(this, TEXT("GE_WheelUp"));
+	WheelDownAction = NewObject<UInputAction>(this, TEXT("GE_WheelDown"));
+	GEMappingContext->MapKey(FireAction, EKeys::LeftMouseButton);
+	GEMappingContext->MapKey(AimAction, EKeys::RightMouseButton);
+	GEMappingContext->MapKey(ReloadAction, EKeys::R);
+	GEMappingContext->MapKey(WheelUpAction, EKeys::MouseScrollUp);
+	GEMappingContext->MapKey(WheelDownAction, EKeys::MouseScrollDown);
+	const FKey SlotKeys[5] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five };
+	for (int32 i = 0; i < 5; ++i)
+	{
+		UInputAction* Slot = NewObject<UInputAction>(this, *FString::Printf(TEXT("GE_Slot%d"), i + 1));
+		GEMappingContext->MapKey(Slot, SlotKeys[i]);
+		WeaponSlotActions.Add(Slot);
+	}
 }
 
 void AGECharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -160,3 +186,12 @@ void AGECharacter::OnCharacterReady_Implementation()
 {
 	// Default does nothing. Later phases / Blueprints override this.
 }
+
+void AGECharacter::FirePressed() { if (Weapons) { Weapons->FirePressed(); } }
+void AGECharacter::FireReleased() { if (Weapons) { Weapons->FireReleased(); } }
+void AGECharacter::AimPressed() { if (Weapons) { Weapons->AimPressed(); } }
+void AGECharacter::AimReleased() { if (Weapons) { Weapons->AimReleased(); } }
+void AGECharacter::ReloadPressed() { if (Weapons) { Weapons->ReloadPressed(); } }
+void AGECharacter::WheelUp() { if (Weapons) { Weapons->CycleWeapon(-1); } }
+void AGECharacter::WheelDown() { if (Weapons) { Weapons->CycleWeapon(1); } }
+void AGECharacter::SelectSlot(int32 Index) { if (Weapons) { Weapons->SelectWeapon(Index); } }

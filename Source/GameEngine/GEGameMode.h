@@ -19,4 +19,11 @@ class GAMEENGINE_API AGEGameMode : public AGameModeBase
 
 public:
 	AGEGameMode();
+
+protected:
+	virtual void BeginPlay() override;
+
+	/** Phase 2 test targets: spawned in front of the player start on the intro map. */
+	UPROPERTY(EditDefaultsOnly, Category = "GE|Targets")
+	TArray<FVector> DummyOffsets = { FVector(800, -250, 0), FVector(1400, 250, 0), FVector(2200, -400, 0), FVector(3000, 400, 0) };
 };
