@@ -176,6 +176,13 @@ void FGEUIKit::Panel(float X, float Y, float PW, float PH, float CutDesign, uint
 	ChamferOutline(X, Y, PW, PH, Cut, Mask, bAccentBorder ? Th->BorderSubtle : Th->BorderFaint, S(1.0f));
 }
 
+void FGEUIKit::HudModule(float X, float Y, float PW, float PH, bool bAccent) const
+{
+	const float Cut = S(8.0f);
+	ChamferFill(X, Y, PW, PH, Cut, GECut::BR, WithAlpha(Th->BgBase, 0.78f));
+	ChamferOutline(X, Y, PW, PH, Cut, GECut::BR, bAccent ? Th->BorderDefault : Th->BorderFaint, S(1.0f));
+}
+
 void FGEUIKit::Button(float X, float Y, float BW, float BH, const FString& Label, EGEButtonStyle Style, EGEButtonState State, bool bChevron) const
 {
 	const float Cut = S(FMath::Clamp(BH / Scale * 0.22f, 6.0f, 14.0f));

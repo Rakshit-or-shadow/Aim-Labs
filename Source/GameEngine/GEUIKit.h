@@ -82,6 +82,9 @@ struct GAMEENGINE_API FGEUIKit
 	/** Diamond category tile centred on (CX, CY) with Radius (real px), label below. */
 	void DiamondTile(float CX, float CY, float Radius, const FString& Label, bool bSelected) const;
 
+	/** Semi-transparent dark backing for in-game HUD modules (keeps text readable on busy scenes). */
+	void HudModule(float X, float Y, float W, float H, bool bAccent = false) const;
+
 	// ------------------------------------------------------------------ controls
 	/** "MASTER VOLUME            075" label row + track + vertical thumb. Fraction 0..1. Needs about 44 design px of height. */
 	void Slider(float X, float Y, float W, const FString& Label, float Fraction, const FString& ValueText, bool bFocused = false) const;

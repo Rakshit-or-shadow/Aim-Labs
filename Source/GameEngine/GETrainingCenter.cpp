@@ -6,6 +6,8 @@
 #include "Engine/StaticMesh.h"
 #include "GETrainingManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "GEStyle.h"
 
 AGETrainingCenter::AGETrainingCenter()
 {
@@ -19,6 +21,18 @@ void AGETrainingCenter::BeginPlay()
 	Super::BeginPlay();
 	CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	GlowMaterial = LoadObject<UMaterialInterface>(nullptr, GEStyle::GlowMaterialPath);
+
+	// Stage B4: a light haze so the room matches the dark neon look of the arena
+	if (UExponentialHeightFogComponent* Fog = NewObject<UExponentialHeightFogComponent>(this, TEXT("GE_Haze")))
+	{
+		Fog->SetupAttachment(Root);
+		Fog->RegisterComponent();
+		Fog->SetFogDensity(0.004f);
+		Fog->SetFogHeightFalloff(0.3f);
+		Fog->SetFogInscatteringColor(GEStyle::GetTheme(GEStyle::EGETheme::Red).BgTint);
+		Fog->SetFogMaxOpacity(0.6f);
+	}
 
 	BuildHub();
 	BuildLane();
@@ -34,7 +48,7 @@ void AGETrainingCenter::BeginPlay()
 }
 
 /** Makes one colored box. Collision comes from a separate invisible box component. */
-UStaticMeshComponent* AGETrainingCenter::AddBox(const FVector& LocalCenter, const FVector& SizeCm, const FLinearColor& Color, bool bCollide, float YawDeg)
+UStaticMeshComponent* AGETrainingCenter::AddBox(const FVector& LocalCenter, const FVector& SizeCm, const FLinearColor& Color, bool bCollide, float YawDeg, bool bGlow)
 {
 	const int32 Id = PartCounter++;
 	UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(this, *FString::Printf(TEXT("GE_Box%d"), Id));
@@ -45,9 +59,10 @@ UStaticMeshComponent* AGETrainingCenter::AddBox(const FVector& LocalCenter, cons
 	C->SetRelativeScale3D(SizeCm / 100.0f); // cube is 100 cm at scale 1
 	C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	C->RegisterComponent();
-	if (BaseMaterial)
+	UMaterialInterface* Base = (bGlow && GlowMaterial) ? GlowMaterial.Get() : BaseMaterial.Get();
+	if (Base)
 	{
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, C);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(Base, C);
 		M->SetVectorParameterValue(TEXT("Color"), Color);
 		C->SetMaterial(0, M);
 	}
@@ -96,12 +111,12 @@ void AGETrainingCenter::BuildHub()
 	const float MidX = (L.FloorMinX + L.FloorMaxX) * 0.5f;
 
 	// Big floor (top surface at local Z 0).
-	AddBox(FVector(MidX, 0, -20), FVector(Length, L.FloorHalfWidth * 2.0f, 40), FLinearColor(0.25f, 0.27f, 0.3f), true);
+	AddBox(FVector(MidX, 0, -20), FVector(Length, L.FloorHalfWidth * 2.0f, 40), GEStyle::WithAlpha(GEStyle::FloorColor * 2.0f, 1.0f), true);
 	// Spawn pad in the hub.
-	AddBox(FVector(0, 0, 0.6f), FVector(500, 500, 1), FLinearColor(0.1f, 0.5f, 0.9f), false);
+	AddBox(FVector(0, 0, 0.6f), FVector(500, 500, 1), GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Red).AccentDim, 1.2f), false, 0.0f, true);
 
 	// Walls: rear, far end, two sides.
-	const FLinearColor WallColor(0.45f, 0.45f, 0.5f);
+	const FLinearColor WallColor = GEStyle::WithAlpha(GEStyle::BackWallColor * 2.5f, 1.0f); // dark walls (theme background)
 	AddBox(FVector(L.FloorMinX, 0, L.WallHeight * 0.5f), FVector(40, L.FloorHalfWidth * 2.0f, L.WallHeight), WallColor, true);
 	AddBox(FVector(L.FloorMaxX, 0, L.WallHeight * 0.5f), FVector(40, L.FloorHalfWidth * 2.0f, L.WallHeight), WallColor, true);
 	AddBox(FVector(MidX, L.FloorHalfWidth, L.WallHeight * 0.5f), FVector(Length, 40, L.WallHeight), WallColor, true);
@@ -112,7 +127,18 @@ void AGETrainingCenter::BuildHub()
 	{
 		AddLight(FVector(X, 0, L.LightHeight));
 	}
-	AddText(TEXT("TRAINING CENTER"), FVector(L.FloorMinX + 30.0f, 0, 300), 0.0f, 80.0f, FColor::Cyan);
+
+	// Stage B4: neon strips along the walls (red low, cyan high), same colors as the UI themes
+	const FLinearColor RedNeon = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Red).AccentPrimary, 2.5f);
+	const FLinearColor CyanNeon = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentPrimary, 3.0f);
+	for (float Side : { -1.0f, 1.0f })
+	{
+		const float Y = Side * (L.FloorHalfWidth - 24.0f);
+		AddBox(FVector(MidX, Y, 6.0f), FVector(Length - 80.0f, 6, 6), RedNeon, false, 0.0f, true);
+		AddBox(FVector(MidX, Y, L.WallHeight - 10.0f), FVector(Length - 80.0f, 6, 6), CyanNeon, false, 0.0f, true);
+	}
+	const FColor Info = GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentPrimary.ToFColor(true);
+	AddText(TEXT("TRAINING CENTER"), FVector(L.FloorMinX + 30.0f, 0, 300), 0.0f, 80.0f, Info);
 }
 
 void AGETrainingCenter::BuildLane()
@@ -120,18 +146,18 @@ void AGETrainingCenter::BuildLane()
 	const FGETrainingLayout& L = Layout;
 
 	// Lane strip from the spawn pad to the far end.
-	AddBox(FVector(2500, 0, 0.6f), FVector(5000, 600, 1), FLinearColor(0.12f, 0.13f, 0.15f), false);
+	AddBox(FVector(2500, 0, 0.6f), FVector(5000, 600, 1), GEStyle::WithAlpha(GEStyle::FloorColor * 3.0f, 1.0f), false);
 
 	// Distance markers: a floor strip plus a sign post with text on each side. Text faces back toward the player (yaw 180).
 	for (int32 Meters : L.MarkerDistancesMeters)
 	{
 		const float X = Meters * 100.0f;
-		AddBox(FVector(X, 0, 1.0f), FVector(30, 600, 1.5f), FLinearColor(1.0f, 0.6f, 0.1f), false);
+		AddBox(FVector(X, 0, 1.0f), FVector(30, 600, 1.5f), GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Yellow).AccentPrimary, 1.5f), false, 0.0f, true);
 		for (float Side : { -1.0f, 1.0f })
 		{
 			const float Y = Side * 380.0f;
 			AddBox(FVector(X, Y, 60), FVector(10, 10, 120), FLinearColor(0.8f, 0.8f, 0.8f), false);
-			AddText(FString::Printf(TEXT("%d m"), Meters), FVector(X - 8.0f, Y, 150), 180.0f, 60.0f, FColor::Orange);
+			AddText(FString::Printf(TEXT("%d m"), Meters), FVector(X - 8.0f, Y, 150), 180.0f, 60.0f, GEStyle::GetTheme(GEStyle::EGETheme::Yellow).AccentPrimary.ToFColor(true));
 		}
 	}
 
@@ -154,13 +180,13 @@ void AGETrainingCenter::BuildPortal()
 	const FVector Center = T.InverseTransformPosition(PortalLocation);
 	const FRotator Facing(0.0f, PortalYaw, 0.0f);
 	const FVector Side = Facing.RotateVector(FVector::RightVector);
-	const FLinearColor Glow(0.1f, 0.9f, 1.0f);
+	const FLinearColor Glow = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentPrimary, 3.0f);
 
-	AddBox(Center + Side * 110.0f + FVector(0, 0, 150), FVector(20, 20, 300), Glow, false, PortalYaw);
-	AddBox(Center - Side * 110.0f + FVector(0, 0, 150), FVector(20, 20, 300), Glow, false, PortalYaw);
-	AddBox(Center + FVector(0, 0, 300), FVector(20, 240, 20), Glow, false, PortalYaw);
+	AddBox(Center + Side * 110.0f + FVector(0, 0, 150), FVector(20, 20, 300), Glow, false, PortalYaw, true);
+	AddBox(Center - Side * 110.0f + FVector(0, 0, 150), FVector(20, 20, 300), Glow, false, PortalYaw, true);
+	AddBox(Center + FVector(0, 0, 300), FVector(20, 240, 20), Glow, false, PortalYaw, true);
 	// Text faces back toward the start (opposite of its looking direction).
-	AddText(TEXT("TRAINING CENTER\npress T"), Center + FVector(0, 0, 360), PortalYaw + 180.0f, 40.0f, FColor::Cyan);
+	AddText(TEXT("TRAINING CENTER\npress T"), Center + FVector(0, 0, 360), PortalYaw + 180.0f, 40.0f, GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentPrimary.ToFColor(true));
 }
 
 void AGETrainingCenter::GetBotSlots(EGETrainingMode Mode, TArray<FGEBotSlot>& OutSlots) const

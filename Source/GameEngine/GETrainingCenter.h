@@ -95,7 +95,7 @@ protected:
 	FGETrainingLayout Layout;
 
 private:
-	UStaticMeshComponent* AddBox(const FVector& LocalCenter, const FVector& SizeCm, const FLinearColor& Color, bool bCollide, float YawDeg = 0.0f);
+	UStaticMeshComponent* AddBox(const FVector& LocalCenter, const FVector& SizeCm, const FLinearColor& Color, bool bCollide, float YawDeg = 0.0f, bool bGlow = false);
 	void AddText(const FString& Text, const FVector& LocalLocation, float YawDeg, float WorldSize, const FColor& Color);
 	void AddLight(const FVector& LocalLocation);
 	void BuildHub();
@@ -109,6 +109,9 @@ private:
 	TObjectPtr<UStaticMesh> CubeMesh;
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> BaseMaterial;
+	/** Unlit material for neon strips (values above 1 bloom). */
+	UPROPERTY()
+	TObjectPtr<UMaterialInterface> GlowMaterial;
 
 	int32 PartCounter = 0;
 	bool bHasPortal = false;

@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Engine/PostProcessVolume.h"
+#include "Components/ExponentialHeightFogComponent.h"
 #include "Engine/Scene.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -55,8 +56,9 @@ void AGEArena::BeginPlay()
 	AddBox(FVector(ArenaXMin - T * 0.5f, 0, ArenaHeight * 0.5f), FVector(T, ArenaHalfWidth * 2, ArenaHeight), GEStyle::WallColor, false);
 
 	// =================== neon strips ===================
-	const FLinearColor CyanNeon = GEStyle::Glow(GEStyle::Cyan, 3.0f);
-	const FLinearColor PinkNeon = GEStyle::Glow(GEStyle::Magenta, 2.5f);
+	// Stage B4: neon strips use the UI theme colors (cyan = info, red = primary)
+	const FLinearColor CyanNeon = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentPrimary, 3.0f);
+	const FLinearColor PinkNeon = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Red).AccentPrimary, 2.5f);
 	const float Strip = 6.0f; // strip thickness
 
 	// along the floor edges (cyan) and ceiling edges (pink)
@@ -83,7 +85,7 @@ void AGEArena::BeginPlay()
 	AddBox(FVector(FrameX,  FrameHalfW, FrameMidZ), FVector(Strip, Strip, FrameTop - FrameBottom), CyanNeon, true);
 
 	// =================== floor grid ===================
-	const FLinearColor GridColor = GEStyle::Glow(GEStyle::Cyan, 0.35f);
+	const FLinearColor GridColor = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentDim, 0.5f);
 	for (float Y = -800.0f; Y <= 800.0f; Y += 200.0f)
 	{
 		AddBox(FVector(MidX, Y, 3), FVector(Length, 3, 2), GridColor, true);
@@ -108,6 +110,17 @@ void AGEArena::BeginPlay()
 	AddLight(FVector(800,   500, 850), CoolWhite, 80.0f, 1800.0f, true);
 	// soft cyan wash on the back wall
 	AddLight(FVector(1150, 0, 320), GEStyle::Cyan, 30.0f, 800.0f, false);
+
+	// Stage B4: a faint haze so the far wall fades into the dark
+	if (UExponentialHeightFogComponent* Fog = NewObject<UExponentialHeightFogComponent>(this, TEXT("GE_Haze")))
+	{
+		Fog->SetupAttachment(RootComponent);
+		Fog->RegisterComponent();
+		Fog->SetFogDensity(0.0035f);
+		Fog->SetFogHeightFalloff(0.25f);
+		Fog->SetFogInscatteringColor(GEStyle::GetTheme(GEStyle::EGETheme::Red).BgTint);
+		Fog->SetFogMaxOpacity(0.55f);
+	}
 
 	AddPostProcess();
 }

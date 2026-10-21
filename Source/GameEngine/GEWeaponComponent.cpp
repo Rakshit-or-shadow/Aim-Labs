@@ -691,3 +691,13 @@ void UGEWeaponComponent::PlayTone(float Hz, float Length, float NoiseMix, float 
 	Wave->QueueAudio(reinterpret_cast<const uint8*>(Samples.GetData()), NumSamples * sizeof(int16));
 	UGameplayStatics::PlaySound2D(this, Wave);
 }
+
+float UGEWeaponComponent::GetReloadProgress() const
+{
+	if (!bReloading || GetWorld() == nullptr)
+	{
+		return 0.0f;
+	}
+	const float Total = FMath::Max(GetCurrentWeapon().ReloadTime, 0.01f);
+	return FMath::Clamp(1.0f - (ReloadEndTime - GetWorld()->GetTimeSeconds()) / Total, 0.0f, 1.0f);
+}

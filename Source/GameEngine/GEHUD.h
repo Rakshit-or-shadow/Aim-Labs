@@ -169,9 +169,10 @@ private:
 	void DrawInfoCard(int32 Selected);
 
 	// widgets
-	bool DrawMenuButton(int32 Index, float X, float Y, float W, float H, const FString& Label,
-		const FString& RightText, FLinearColor Accent, float Alpha);
-	void DrawSlider(float X, float Y, float W, float Fraction, FLinearColor Accent, float Alpha);
+	/** Mouse hit test for menu item Index (updates HoveredItem / SelectedItem). Drawing is done by GEUIKit. */
+	bool HitTestItem(int32 Index, float X, float Y, float W, float H);
+	/** Height (real px) that DrawWrappedLabel would use for this text. */
+	float MeasureWrapped(const FString& Text, float MaxWidth, float PixelSize);
 
 	// drawing helpers (sizes are designed for 1080p and scaled by Px)
 	void DrawBox(float X, float Y, float W, float H, FLinearColor Color);
@@ -210,6 +211,9 @@ private:
 	EGEScreen LastDrawnScreen = EGEScreen::FreeRoam;
 	float ScreenStartTime = 0.0f;
 	TArray<float> ButtonAnim;
+	// low-time warning on the round timer (starts a short glitch once)
+	bool bWasLowTime = false;
+	float LowTimeStartTime = -100.0f;
 	float UIScale = 1.0f;
 	float FrameDeltaTime = 0.0f;
 	float NowTime = 0.0f;

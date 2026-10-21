@@ -67,6 +67,8 @@ public:
 	int32 GetReserveAmmo() const;
 	UFUNCTION(BlueprintPure, Category = "GE|Weapon")
 	bool IsReloading() const { return bReloading; }
+	/** 0..1 progress of the running reload (0 when not reloading). */
+	float GetReloadProgress() const;
 	/** Current cone half-angle (degrees) a shot would use right now. */
 	UFUNCTION(BlueprintPure, Category = "GE|Weapon")
 	float GetCurrentSpreadDeg() const;

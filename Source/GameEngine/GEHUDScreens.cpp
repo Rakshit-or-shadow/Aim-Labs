@@ -11,6 +11,7 @@
 //   * SetScreen() -> ApplyInputState() sets cursor, input mode and blocks movement/look/firing in menus.
 
 #include "GEHUD.h"
+#include "GEUIKit.h"
 #include "GECharacter.h"
 #include "GEWeaponComponent.h"
 #include "GETargetManager.h"
@@ -722,9 +723,13 @@ void AGEHUD::HandleKeys()
 // =====================================================================
 //                         PLAYING (aim round HUD)
 // =====================================================================
+// Stage B4: readability first. Every module sits on a dark semi-transparent backing
+// (FGEUIKit::HudModule) so text stays readable on bright or busy backgrounds.
 
 void AGEHUD::DrawPlaying()
 {
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	AGETargetManager* Aim = GetAim();
 	const UGESaveGame* Save = GetSave();
 	const FLinearColor CrosshairColor = GEStyle::GetCrosshairColor(Save ? Save->CrosshairColor : 0);
@@ -736,55 +741,76 @@ void AGEHUD::DrawPlaying()
 		return;
 	}
 
-	const FLinearColor ModeColor = GEAimModes::GetColor(Aim->GetMode());
-
-	// ---------- timer pill (top center) ----------
+	// last 5 seconds of a timed mode (not during the countdown): warning colors + one short glitch
+	const bool bLow = Aim->IsLowOnTime() && !Aim->IsCountingDown();
+	if (bLow && !bWasLowTime)
 	{
-		const float W = Px(240);
-		const float H = Px(96);
+		LowTimeStartTime = NowTime;
+	}
+	bWasLowTime = bLow;
+
+	// ---------- timer module (top center, mono) ----------
+	{
+		const float W = Px(260);
+		const float H = Px(92);
 		const float X = CenterX - W * 0.5f;
 		const float Y = Px(28);
-		DrawPanel(X, Y, W, H, 1.0f);
+		Kit.HudModule(X, Y, W, H, bLow);
 
-		// last 5 seconds of a timed mode (not during the countdown): the timer pulses red
-		FLinearColor TimerColor = GEStyle::TextWhite;
-		if (Aim->IsLowOnTime() && !Aim->IsCountingDown())
+		FLinearColor TimerColor = Th.TextStrong;
+		if (bLow)
 		{
 			const float Pulse = 0.5f + 0.5f * FMath::Sin(NowTime * 10.0f);
-			TimerColor = FMath::Lerp(GEStyle::TextWhite, GEStyle::Red, Pulse);
+			TimerColor = FMath::Lerp(Th.TextStrong, Th.StatusDanger, Pulse);
 		}
-		DrawLabel(Aim->GetTimerText(), CenterX, Y + Px(14), TimerColor, 46, 0.5f, true);
-
-		// progress bar
-		const float BarW = W - Px(40);
-		const float BarY = Y + H - Px(18);
-		DrawBox(X + Px(20), BarY, BarW, Px(4), FLinearColor(1, 1, 1, 0.1f));
-		DrawBox(X + Px(20), BarY, BarW * Aim->GetTimerFraction(), Px(4), ModeColor);
+		Kit.Text(Aim->GetTimerText(), CenterX, Y + Px(8), TimerColor, 52.0f, 0.5f, true);
+		Kit.ProgressBar(X + Px(20), Y + H - Px(22), W - Px(40), Px(6), Aim->GetTimerFraction(), bLow ? Th.StatusDanger : Th.AccentPrimary);
 	}
 
-	// ---------- stats card (top left) ----------
+	// ---------- stats module (left) ----------
 	{
 		const TArray<FGEStatLine> Stats = Aim->GetLiveStats();
 		const float X = Px(36);
 		const float Y = Px(28);
 		const float W = Px(300);
-		const float RowH = Px(40);
-		const float H = Px(62) + Stats.Num() * RowH;
-		DrawPanel(X, Y, W, H, 1.0f);
-		DrawBox(X, Y, Px(4), H, ModeColor); // accent stripe
+		const float RowH = Px(36);
+		const float H = Px(58) + Stats.Num() * RowH;
+		Kit.HudModule(X, Y, W, H);
+		Kit.Rect(X, Y, Px(3), H, Th.AccentPrimary); // accent stripe
 
-		DrawLabel(GEAimModes::GetName(Aim->GetMode()).ToUpper(), X + Px(24), Y + Px(16), ModeColor, 20);
+		Kit.Text(GEAimModes::GetName(Aim->GetMode()).ToUpper(), X + Px(20), Y + Px(14), Th.TextPrimary, GEStyle::Type::LabelL);
 		for (int32 i = 0; i < Stats.Num(); i++)
 		{
-			const float RowY = Y + Px(54) + i * RowH;
-			DrawLabel(Stats[i].Label, X + Px(24), RowY + Px(4), GEStyle::Active().TextBody, 20);
-			DrawLabel(Stats[i].Value, X + W - Px(20), RowY, GEStyle::TextWhite, 26, 1.0f, true);
+			Kit.StatRow(X + Px(20), Y + Px(52) + i * RowH, W - Px(40), Stats[i].Label, Stats[i].Value);
+		}
+	}
+
+	// ---------- mode banner (while the round starts) ----------
+	if (Aim->IsCountingDown() || (Aim->IsRunning() && Aim->GetTimeSinceGo() < 1.5f))
+	{
+		const float W = Px(520);
+		const float H = Px(74);
+		const float X = CenterX - W * 0.5f;
+		const float Y = Px(144);
+		Kit.HudModule(X, Y, W, H, true);
+		Kit.Rect(X, Y, Px(3), H, Th.AccentPrimary);
+		Kit.Text(GEAimModes::GetName(Aim->GetMode()).ToUpper() + TEXT("   //   ") + GEAimModes::GetDurationText(Aim->GetMode()).ToUpper(),
+			CenterX, Y + Px(10), Th.TextStrong, GEStyle::Type::H3, 0.5f);
+		const TArray<FString> Description = GEAimModes::GetDescription(Aim->GetMode());
+		if (Description.Num() > 0)
+		{
+			Kit.Text(Description[0], CenterX, Y + Px(42), Th.TextBody, GEStyle::Type::BodyM, 0.5f);
 		}
 	}
 
 	// ---------- hints (bottom left) ----------
-	DrawLabel(TEXT("R  restart        TAB  pause"), Px(40), Canvas->ClipY - Px(56),
-		GEStyle::WithAlpha(GEStyle::Active().TextBody, 0.8f), 17);
+	{
+		const float X = Px(36);
+		const float H = Px(40);
+		const float Y = Canvas->ClipY - Px(150);
+		Kit.HudModule(X, Y, Px(250), H);
+		Kit.Text(TEXT("R  RESTART      TAB  PAUSE"), X + Px(16), Y + Px(11), Th.TextBody, GEStyle::Type::LabelM);
+	}
 
 	// ---------- message under the crosshair (Reflex) ----------
 	const FString Message = Aim->GetCenterMessage();
@@ -792,13 +818,22 @@ void AGEHUD::DrawPlaying()
 	{
 		const bool bEarly = Message.StartsWith(TEXT("Too"));
 		const float Pulse = 0.65f + 0.35f * FMath::Sin(NowTime * 6.0f);
-		const FLinearColor Color = bEarly ? GEStyle::Red : GEStyle::WithAlpha(GEStyle::TextWhite, Pulse);
-		DrawLabel(Message, CenterX, CenterY + Px(70), Color, 30, 0.5f);
+		const FLinearColor Color = bEarly ? Th.StatusDanger : GEStyle::WithAlpha(Th.TextStrong, Pulse);
+		const float TextW = Kit.Measure(Message, GEStyle::Type::H3).X;
+		Kit.HudModule(CenterX - TextW * 0.5f - Px(24), CenterY + Px(62), TextW + Px(48), Px(52), bEarly);
+		Kit.Text(Message, CenterX, CenterY + Px(70), Color, GEStyle::Type::H3, 0.5f);
 	}
 
 	DrawAimPopups();
-	DrawCountdown(ModeColor);
+	DrawCountdown(Th.AccentPrimary);
 	DrawAimHitMarker();
+
+	// the short glitch when the timer enters the last seconds (respects the Screen glitch setting)
+	if (bLow && Save && Save->bGlitch)
+	{
+		Kit.Glitch(NowTime - LowTimeStartTime);
+	}
+
 	if (Screen == EGEScreen::Playing)
 	{
 		DrawCrosshairAt(CenterX, CenterY, CrosshairColor, 0.0f); // last, so it is on top
@@ -812,7 +847,7 @@ void AGEHUD::DrawAimHitMarker()
 	{
 		return;
 	}
-	// white X that fades out over 0.15 s after a hit
+	// X that fades out over 0.15 s after a hit (dark outline first so it reads on bright walls)
 	const float Age = NowTime - Aim->LastHitTime;
 	if (Age >= 0.15f)
 	{
@@ -822,12 +857,19 @@ void AGEHUD::DrawAimHitMarker()
 	const float CenterY = Canvas->ClipY * 0.5f;
 	const float Inner = Px(9);
 	const float Outer = Px(19);
-	const FLinearColor Color = GEStyle::WithAlpha(GEStyle::TextWhite, 1.0f - Age / 0.15f);
+	const float Fade = 1.0f - Age / 0.15f;
+	const FLinearColor Dark = GEStyle::WithAlpha(GEStyle::Active().BgSunken, 0.8f * Fade);
+	const FLinearColor Color = GEStyle::WithAlpha(GEStyle::Active().TextStrong, Fade);
 
-	DrawLine(CenterX - Outer, CenterY - Outer, CenterX - Inner, CenterY - Inner, Color, 2.0f);
-	DrawLine(CenterX + Inner, CenterY + Inner, CenterX + Outer, CenterY + Outer, Color, 2.0f);
-	DrawLine(CenterX + Outer, CenterY - Outer, CenterX + Inner, CenterY - Inner, Color, 2.0f);
-	DrawLine(CenterX - Inner, CenterY + Inner, CenterX - Outer, CenterY + Outer, Color, 2.0f);
+	for (int32 Pass = 0; Pass < 2; Pass++)
+	{
+		const FLinearColor& C = (Pass == 0) ? Dark : Color;
+		const float Thick = (Pass == 0) ? 4.0f : 2.0f;
+		DrawLine(CenterX - Outer, CenterY - Outer, CenterX - Inner, CenterY - Inner, C, Thick);
+		DrawLine(CenterX + Inner, CenterY + Inner, CenterX + Outer, CenterY + Outer, C, Thick);
+		DrawLine(CenterX + Outer, CenterY - Outer, CenterX + Inner, CenterY - Inner, C, Thick);
+		DrawLine(CenterX - Inner, CenterY + Inner, CenterX - Outer, CenterY + Outer, C, Thick);
+	}
 }
 
 void AGEHUD::DrawCountdown(const FLinearColor& ModeColor)
@@ -837,6 +879,7 @@ void AGEHUD::DrawCountdown(const FLinearColor& ModeColor)
 	{
 		return;
 	}
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	const float CenterX = Canvas->ClipX * 0.5f;
 	const float CenterY = Canvas->ClipY * 0.5f;
 
@@ -850,12 +893,12 @@ void AGEHUD::DrawCountdown(const FLinearColor& ModeColor)
 		const float Size = 150.0f * (1.0f + 0.35f * FMath::Pow(InSecond, 4.0f));
 		const float Alpha = FMath::Clamp(InSecond * 4.0f, 0.0f, 1.0f);
 
-		DrawLabel(TEXT("GET READY"), CenterX, CenterY - Px(250), GEStyle::WithAlpha(GEStyle::Active().TextBody, 0.9f), 24, 0.5f);
+		DrawLabel(TEXT("GET READY"), CenterX, CenterY - Px(250), GEStyle::WithAlpha(Th.TextBody, 0.9f), GEStyle::Type::H3, 0.5f);
 
 		const FString Text = FString::FromInt(Number);
 		const FVector2D TextSize = MeasureText(Text, Size, true);
 		DrawGlowLabel(Text, CenterX, CenterY - Px(150) - TextSize.Y * 0.5f,
-			GEStyle::WithAlpha(GEStyle::TextWhite, Alpha), GEStyle::WithAlpha(ModeColor, Alpha), Size, 0.5f, true);
+			GEStyle::WithAlpha(Th.TextStrong, Alpha), GEStyle::WithAlpha(ModeColor, Alpha), Size, 0.5f, true);
 		return;
 	}
 
@@ -867,7 +910,7 @@ void AGEHUD::DrawCountdown(const FLinearColor& ModeColor)
 		const float Size = 130.0f * (1.0f + 0.4f * SinceGo);
 		const FVector2D TextSize = MeasureText(TEXT("GO!"), Size);
 		DrawGlowLabel(TEXT("GO!"), CenterX, CenterY - Px(150) - TextSize.Y * 0.5f,
-			GEStyle::WithAlpha(GEStyle::TextWhite, Alpha), GEStyle::WithAlpha(GEStyle::Green, Alpha), Size, 0.5f);
+			GEStyle::WithAlpha(Th.TextStrong, Alpha), GEStyle::WithAlpha(Th.StatusSuccess, Alpha), Size, 0.5f);
 	}
 }
 
@@ -878,6 +921,7 @@ void AGEHUD::DrawAimPopups()
 	{
 		return;
 	}
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	for (const FGEScorePopup& Popup : Aim->GetPopups())
 	{
 		const float Age = NowTime - Popup.SpawnTime;
@@ -890,8 +934,9 @@ void AGEHUD::DrawAimPopups()
 		{
 			continue; // behind the camera
 		}
-		const FLinearColor Color = GEStyle::WithAlpha(FMath::Lerp(Popup.Color, GEStyle::TextWhite, 0.4f), 1.0f - Life);
-		DrawLabel(Popup.Text, ScreenPos.X, ScreenPos.Y, Color, 24, 0.5f, true);
+		const float Fade = 1.0f - Life;
+		DrawGlowLabel(Popup.Text, ScreenPos.X, ScreenPos.Y, GEStyle::WithAlpha(Th.TextStrong, Fade),
+			GEStyle::WithAlpha(Th.StatusSuccess, Fade), GEStyle::Type::DataL, 0.5f, true);
 	}
 }
 
@@ -901,200 +946,208 @@ void AGEHUD::DrawAimPopups()
 
 void AGEHUD::DrawBackdrop(float Alpha1, float Alpha2, bool bHorizontal)
 {
-	DrawGradient(0, 0, Canvas->ClipX, Canvas->ClipY,
-		FLinearColor(0.008f, 0.01f, 0.02f, Alpha1), FLinearColor(0.008f, 0.01f, 0.02f, Alpha2), bHorizontal);
+	const FLinearColor Base = GEStyle::Active().BgSunken;
+	DrawGradient(0, 0, Canvas->ClipX, Canvas->ClipY, GEStyle::WithAlpha(Base, Alpha1), GEStyle::WithAlpha(Base, Alpha2), bHorizontal);
 }
 
 void AGEHUD::DrawMainMenu()
 {
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	const float Age = ScreenAge();
 	const float Intro = EaseOut(Age / 0.4f);
 	const float Left = Px(120);
 
-	// dark on the left (behind the buttons), see-through on the right (the showcase targets)
-	DrawBackdrop(0.93f, 0.3f, true);
+	// dark on the left (behind the title and nav), see-through on the right (the showcase targets)
+	DrawBackdrop(0.9f, 0.2f, true);
+	Kit.ScreenChrome(TEXT("RAYSHOT // MAIN MENU"));
 
-	// ---------- title ----------
-	DrawGlowLabel(TEXT("RAYSHOT"), Left - Px(30) * (1.0f - Intro), Px(110),
-		GEStyle::WithAlpha(GEStyle::TextWhite, Intro), GEStyle::WithAlpha(GEStyle::Active().AccentPrimary, Intro), 120);
-	DrawBox(Left, Px(262), Px(90) * Intro, Px(5), GEStyle::Active().AccentPrimary);
-	DrawLabel(TEXT("AIM TRAINER   //   HIT DETECTION BY MY OWN RAY TRACER"), Left, Px(284),
-		GEStyle::WithAlpha(GEStyle::Active().TextBody, Intro), 19);
+	// ---------- tag, title, subtitle ----------
+	const float Slide = Px(30) * (1.0f - Intro);
+	Kit.Rect(Left - Slide, Px(150), Px(36), Px(2), Th.StatusInfo);
+	Kit.Text(TEXT("RAKSHIT SINGH // 2026"), Left + Px(48) - Slide, Px(140), GEStyle::WithAlpha(Th.StatusInfo, Intro), GEStyle::Type::LabelL);
+	Kit.GlowText(TEXT("RAYSHOT"), Left - Slide, Px(170), GEStyle::WithAlpha(Th.TextStrong, Intro), GEStyle::WithAlpha(Th.AccentPrimary, Intro), 140.0f);
+	Kit.Rect(Left, Px(332), Px(120) * Intro, Px(4), Th.AccentPrimary);
+	Kit.Text(TEXT("AIM, TRACK AND FLICK. HIT DETECTION BY A CUSTOM RAY TRACER."), Left, Px(350), GEStyle::WithAlpha(Th.TextBody, Intro), GEStyle::Type::BodyL);
 
-	// ---------- buttons ----------
-	struct FItem { const TCHAR* Label; const TCHAR* Right; FLinearColor Color; };
+	// ---------- nav items ----------
+	struct FItem { const TCHAR* Label; const TCHAR* Right; };
 	const FItem Items[NumMenuItems] = {
-		{ TEXT("AIM TRAINER"),     TEXT("4 MODES"), GEStyle::Cyan },
-		{ TEXT("TRAINING CENTER"), TEXT(""),        GEStyle::Green },
-		{ TEXT("FLICK OPTIMIZER"), TEXT(""),        GEStyle::Magenta },
-		{ TEXT("FREE ROAM"),       TEXT(""),        GEStyle::Gold },
-		{ TEXT("SETTINGS"),        TEXT(""),        GEStyle::Active().TextBody },
-		{ TEXT("QUIT"),            TEXT(""),        GEStyle::Red },
+		{ TEXT("AIM TRAINER"),     TEXT("4 MODES") },
+		{ TEXT("TRAINING CENTER"), TEXT("") },
+		{ TEXT("FLICK OPTIMIZER"), TEXT("") },
+		{ TEXT("FREE ROAM"),       TEXT("") },
+		{ TEXT("SETTINGS"),        TEXT("") },
+		{ TEXT("QUIT"),            TEXT("") },
 	};
-	const float ButtonW = Px(600);
-	const float ButtonH = Px(62);
-	const float Gap = Px(12);
-	float Y = Px(360);
+	const float ItemW = Px(480);
+	const float ItemH = Px(52);
+	const float Gap = Px(10);
+	float Y = Px(412);
 	for (int32 i = 0; i < NumMenuItems; i++)
 	{
 		if (i == MenuSettings)
 		{
-			Y += Px(18); // little gap before Settings / Quit
+			Y += Px(14); // little gap before Settings / Quit
 		}
-		const float ButtonIntro = EaseOut((Age - 0.05f * i) / 0.3f); // buttons slide in one after another
-		const float X = Left - Px(40) * (1.0f - ButtonIntro);
-		DrawMenuButton(i, X, Y, ButtonW, ButtonH, Items[i].Label, Items[i].Right, Items[i].Color, ButtonIntro);
-		Y += ButtonH + Gap;
+		const float ItemIntro = EaseOut((Age - 0.05f * i) / 0.3f); // items slide in one after another
+		const float X = Left - Px(40) * (1.0f - ItemIntro);
+		const bool bHover = HitTestItem(i, X, Y, ItemW, ItemH);
+		const bool bSel = (SelectedItem == i);
+		Kit.NavItem(X, Y, ItemW, ItemH, i + 1, Items[i].Label, bSel ? EGENavState::Selected : (bHover ? EGENavState::Hover : EGENavState::Default));
+		if (Items[i].Right[0] != 0)
+		{
+			Kit.TextCentered(Items[i].Right, X + ItemW - Px(24), Y, ItemH, bSel ? Th.TextOnAccent : Th.TextMuted, GEStyle::Type::DataM, 1.0f, true);
+		}
+		Y += ItemH + Gap;
 	}
 
 	DrawInfoCard(SelectedItem);
 
 	// ---------- footer ----------
-	DrawLabel(TEXT("W / S  or mouse to choose      ENTER / click to select      TAB = back / pause"), Left, Canvas->ClipY - Px(64),
-		GEStyle::Active().TextBody, 17);
-	DrawLabel(TEXT("GameEngine"), Canvas->ClipX - Px(120), Canvas->ClipY - Px(64),
-		GEStyle::WithAlpha(GEStyle::Active().TextBody, 0.6f), 17, 1.0f);
+	Kit.Text(TEXT("W / S  OR MOUSE TO CHOOSE      ENTER / CLICK TO SELECT      TAB = BACK / PAUSE"), Canvas->ClipX * 0.5f, Canvas->ClipY - Px(84),
+		Th.TextMuted, GEStyle::Type::LabelS, 0.5f);
 }
 
 void AGEHUD::DrawInfoCard(int32 Selected)
 {
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	const float Intro = EaseOut(ScreenAge() / 0.4f);
-	const float CardW = Px(520);
-	const float CardX = Canvas->ClipX - Px(120) - CardW;
-	const float CardY = Px(360);
-	const float TextX = CardX + Px(40);
+	const float CardW = Px(500);
+	const float CardX = Canvas->ClipX - Px(120) - CardW + Px(30) * (1.0f - Intro);
+	const float CardY = Px(412);
+	const float TextX = CardX + Px(36);
 
 	// what to tell the player about the highlighted entry
 	FString Title;
 	TArray<FString> Lines;
-	FLinearColor Accent = GEStyle::Cyan;
 	switch (Selected)
 	{
 	case MenuAim:
 		Title = TEXT("AIM TRAINER");
 		Lines = { TEXT("Gridshot, Microshot, Tracking, Reflex."), TEXT("Timed rounds with personal bests."), TEXT("Trains: aim, speed, reaction") };
-		Accent = GEStyle::Cyan;
 		break;
 	case MenuTraining:
 		Title = TEXT("TRAINING CENTER");
 		Lines = { TEXT("Fight bots with your 5 weapons."), TEXT("Static, strafing and peeking targets."), TEXT("The AI Coach gives you 3 tips") };
-		Accent = GEStyle::Green;
 		break;
 	case MenuFlick:
 		Title = TEXT("FLICK OPTIMIZER");
 		Lines = { TEXT("Flick to targets in every direction."), TEXT("Measures overshoot and speed."), TEXT("Suggests a better sensitivity") };
-		Accent = GEStyle::Magenta;
 		break;
 	case MenuFreeRoam:
 		Title = TEXT("FREE ROAM");
 		Lines = { TEXT("Walk around the room."), TEXT("All 5 weapons, shoot the dummies."), TEXT("T = Training Center, M = its menu") };
-		Accent = GEStyle::Gold;
 		break;
 	case MenuSettings:
 		Title = TEXT("SETTINGS");
-		Lines = { TEXT("Sensitivity, field of view, volume"), TEXT("and crosshair color.") };
-		Accent = GEStyle::Active().TextBody;
+		Lines = { TEXT("Mouse, video, audio, crosshair"), TEXT("and interface options.") };
 		break;
 	default:
 		Title = TEXT("QUIT");
 		Lines = { TEXT("See you next session.") };
-		Accent = GEStyle::Red;
 		break;
 	}
 
-	const float CardH = Px(260);
-	DrawPanel(CardX, CardY, CardW, CardH, Intro);
-	DrawBox(CardX, CardY, CardW, Px(5), GEStyle::WithAlpha(Accent, Intro));
-	DrawGlowLabel(Title, TextX, CardY + Px(36), GEStyle::TextWhite, Accent, 40);
+	const float CardH = Px(270);
+	Kit.Panel(CardX, CardY, CardW, CardH, 12.0f, GECut::BR, true);
+	Kit.Rect(CardX, CardY, CardW, Px(3), Th.AccentPrimary);
+	Kit.GlowText(Title, TextX, CardY + Px(28), Th.TextStrong, Th.AccentPrimary, GEStyle::Type::H2);
 	for (int32 i = 0; i < Lines.Num(); i++)
 	{
-		DrawLabel(Lines[i], TextX, CardY + Px(110) + i * Px(34), (i == Lines.Num() - 1 && Lines.Num() == 3) ? Accent : GEStyle::TextWhite, 22);
+		const bool bTrains = (i == Lines.Num() - 1 && Lines.Num() == 3);
+		Kit.Text(Lines[i], TextX, CardY + Px(100) + i * Px(34), bTrains ? Th.StatusInfo : Th.TextBody, GEStyle::Type::BodyL);
 	}
 	const float Pulse = 0.6f + 0.4f * FMath::Sin(NowTime * 4.0f);
-	DrawLabel(TEXT("PRESS ENTER OR CLICK"), TextX, CardY + CardH - Px(48), GEStyle::WithAlpha(Accent, Pulse), 18);
+	Kit.Text(TEXT("PRESS ENTER OR CLICK"), TextX, CardY + CardH - Px(46), GEStyle::WithAlpha(Th.TextPrimary, Pulse), GEStyle::Type::LabelM);
 }
 
 void AGEHUD::DrawModeSelect()
 {
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	const AGETargetManager* Aim = GetAim();
 	const float Age = ScreenAge();
 	const float Intro = EaseOut(Age / 0.4f);
 	const float Left = Px(120);
 
-	DrawBackdrop(0.93f, 0.3f, true);
+	DrawBackdrop(0.9f, 0.45f, true);
+	Kit.ScreenChrome(TEXT("AIM TRAINER // MODE SELECT"));
 
-	DrawGlowLabel(TEXT("AIM TRAINER"), Left - Px(30) * (1.0f - Intro), Px(110),
-		GEStyle::WithAlpha(GEStyle::TextWhite, Intro), GEStyle::WithAlpha(GEStyle::Active().AccentPrimary, Intro), 100);
-	DrawBox(Left, Px(240), Px(90) * Intro, Px(5), GEStyle::Active().AccentPrimary);
-	DrawLabel(TEXT("CHOOSE A MODE"), Left, Px(262), GEStyle::WithAlpha(GEStyle::Active().TextBody, Intro), 19);
+	const float Slide = Px(30) * (1.0f - Intro);
+	Kit.GlowText(TEXT("AIM TRAINER"), Left - Slide, Px(110), GEStyle::WithAlpha(Th.TextStrong, Intro), GEStyle::WithAlpha(Th.AccentPrimary, Intro), GEStyle::Type::DisplayL);
+	Kit.Rect(Left, Px(196), Px(120) * Intro, Px(4), Th.AccentPrimary);
+	Kit.Text(TEXT("CHOOSE A MODE"), Left, Px(214), GEStyle::WithAlpha(Th.TextBody, Intro), GEStyle::Type::LabelL);
+	Kit.PageIndicator(Left + Px(190), Px(206), FMath::Min(SelectedItem, GEAimModes::NumModes - 1) + 1, GEAimModes::NumModes, TEXT("MODE"));
 
-	// ---------- 4 mode buttons + Back ----------
-	const float ButtonW = Px(600);
-	const float ButtonH = Px(62);
-	const float Gap = Px(12);
-	float Y = Px(330);
-	for (int32 i = 0; i <= GEAimModes::NumModes; i++)
+	// ---------- 4 diamond tiles ----------
+	const float Radius = Px(92);
+	const float TileGap = Px(240);
+	const float TileY = Px(520);
+	for (int32 i = 0; i < GEAimModes::NumModes; i++)
 	{
-		const float ButtonIntro = EaseOut((Age - 0.05f * i) / 0.3f);
-		const float X = Left - Px(40) * (1.0f - ButtonIntro);
-		if (i < GEAimModes::NumModes)
-		{
-			const EGEAimMode Mode = (EGEAimMode)i;
-			float Best = 0.0f;
-			const FString BestText = (Aim && Aim->GetBestScore(Mode, Best)) ? TEXT("BEST  ") + GEAimModes::FormatScore(Mode, Best) : FString(TEXT("NEW"));
-			DrawMenuButton(i, X, Y, ButtonW, ButtonH, GEAimModes::GetName(Mode).ToUpper(), BestText, GEAimModes::GetColor(Mode), ButtonIntro);
-		}
-		else
-		{
-			Y += Px(18);
-			DrawMenuButton(i, X, Y, ButtonW, ButtonH, TEXT("BACK"), TEXT(""), GEStyle::Active().TextBody, ButtonIntro);
-		}
-		Y += ButtonH + Gap;
+		const EGEAimMode Mode = (EGEAimMode)i;
+		const float TileIntro = EaseOut((Age - 0.06f * i) / 0.3f);
+		const float CX = Left + Px(100) + i * TileGap;
+		const float CY = TileY + Px(30) * (1.0f - TileIntro);
+		HitTestItem(i, CX - Radius * 0.8f, CY - Radius * 0.8f, Radius * 1.6f, Radius * 1.6f + Px(60));
+		Kit.DiamondTile(CX, CY, Radius, GEAimModes::GetName(Mode), SelectedItem == i);
+
+		// personal best in YELLOW under the tile name
+		float Best = 0.0f;
+		const bool bHasBest = Aim && Aim->GetBestScore(Mode, Best);
+		Kit.Text(bHasBest ? GEAimModes::FormatScore(Mode, Best) : FString(TEXT("NEW")), CX, CY + Radius + Px(38),
+			bHasBest ? Th.StatusWarning : Th.TextMuted, GEStyle::Type::DataM, 0.5f, true);
 	}
 
-	// ---------- info card for the highlighted mode ----------
-	const float CardW = Px(520);
-	const float CardX = Canvas->ClipX - Px(120) - CardW;
-	const float CardY = Px(330);
+	// ---------- back ----------
+	{
+		const float BX = Left;
+		const float BY = Px(790);
+		const float BW = Px(220);
+		const float BH = Px(54);
+		const bool bHover = HitTestItem(GEAimModes::NumModes, BX, BY, BW, BH);
+		Kit.Button(BX, BY, BW, BH, TEXT("BACK"), EGEButtonStyle::Secondary,
+			(SelectedItem == GEAimModes::NumModes || bHover) ? EGEButtonState::Hover : EGEButtonState::Default, false);
+	}
+
+	// ---------- description card for the highlighted mode ----------
 	if (SelectedItem < GEAimModes::NumModes)
 	{
 		const EGEAimMode Mode = (EGEAimMode)SelectedItem;
-		const FLinearColor ModeColor = GEAimModes::GetColor(Mode);
-		const float CardH = Px(420);
-		const float TextX = CardX + Px(40);
+		const float CardW = Px(500);
+		const float CardX = Canvas->ClipX - Px(120) - CardW + Px(30) * (1.0f - Intro);
+		const float CardY = Px(300);
+		const float CardH = Px(500);
+		const float TextX = CardX + Px(36);
+		const float InnerW = CardW - Px(72);
 
-		DrawPanel(CardX, CardY, CardW, CardH, Intro);
-		DrawBox(CardX, CardY, CardW, Px(5), GEStyle::WithAlpha(ModeColor, Intro));
-		DrawGlowLabel(GEAimModes::GetName(Mode).ToUpper(), TextX, CardY + Px(36), GEStyle::TextWhite, ModeColor, 46);
+		Kit.Panel(CardX, CardY, CardW, CardH, 12.0f, GECut::BR, true);
+		Kit.Rect(CardX, CardY, CardW, Px(3), Th.AccentPrimary);
+		Kit.Text(FString::Printf(TEXT("%02d"), SelectedItem + 1), TextX, CardY + Px(24), Th.StatusWarning, GEStyle::Type::DataL, 0.0f, true);
+		Kit.GlowText(GEAimModes::GetName(Mode).ToUpper(), TextX, CardY + Px(56), Th.TextStrong, Th.AccentPrimary, GEStyle::Type::H1);
 
 		const TArray<FString> Lines = GEAimModes::GetDescription(Mode);
 		for (int32 i = 0; i < Lines.Num(); i++)
 		{
 			const bool bLast = (i == Lines.Num() - 1);
-			DrawLabel(Lines[i], TextX, CardY + Px(112) + i * Px(34), bLast ? ModeColor : GEStyle::TextWhite, 22);
+			Kit.Text(Lines[i], TextX, CardY + Px(132) + i * Px(32), bLast ? Th.StatusInfo : Th.TextBody, GEStyle::Type::BodyL);
 		}
-		DrawBox(TextX, CardY + Px(240), CardW - Px(80), Px(1), GEStyle::PanelBorder);
 
-		DrawLabel(TEXT("DURATION"), TextX, CardY + Px(266), GEStyle::Active().TextBody, 16);
-		DrawLabel(GEAimModes::GetDurationText(Mode), TextX, CardY + Px(292), GEStyle::TextWhite, 28);
-
-		DrawLabel(TEXT("PERSONAL BEST"), TextX + Px(230), CardY + Px(266), GEStyle::Active().TextBody, 16);
+		Kit.StatRow(TextX, CardY + Px(262), InnerW, TEXT("Duration"), GEAimModes::GetDurationText(Mode).ToUpper());
 		float Best = 0.0f;
-		if (Aim && Aim->GetBestScore(Mode, Best))
-		{
-			DrawLabel(GEAimModes::FormatScore(Mode, Best), TextX + Px(230), CardY + Px(292), GEStyle::Gold, 28, 0.0f, true);
-		}
-		else
-		{
-			DrawLabel(TEXT("not played yet"), TextX + Px(230), CardY + Px(296), GEStyle::Active().TextBody, 22);
-		}
+		const bool bHasBest = Aim && Aim->GetBestScore(Mode, Best);
+		Kit.Text(TEXT("PERSONAL BEST"), TextX, CardY + Px(318), Th.TextMuted, GEStyle::Type::LabelM);
+		Kit.Text(bHasBest ? GEAimModes::FormatScore(Mode, Best) : FString(TEXT("NOT PLAYED YET")), TextX, CardY + Px(342),
+			bHasBest ? Th.StatusWarning : Th.TextMuted, GEStyle::Type::H2, 0.0f, true);
 
 		const float Pulse = 0.6f + 0.4f * FMath::Sin(NowTime * 4.0f);
-		DrawLabel(TEXT("PRESS ENTER OR CLICK TO PLAY"), TextX, CardY + CardH - Px(54), GEStyle::WithAlpha(ModeColor, Pulse), 18);
+		Kit.Text(TEXT("PRESS ENTER OR CLICK TO PLAY"), TextX, CardY + CardH - Px(52), GEStyle::WithAlpha(Th.TextPrimary, Pulse), GEStyle::Type::LabelM);
 	}
 
-	DrawLabel(TEXT("W / S  or mouse to choose      ENTER / click to play      TAB = back"), Left, Canvas->ClipY - Px(64),
-		GEStyle::Active().TextBody, 17);
+	Kit.Text(TEXT("W / S  OR MOUSE TO CHOOSE      ENTER / CLICK TO PLAY      TAB = BACK"), Canvas->ClipX * 0.5f, Canvas->ClipY - Px(84),
+		Th.TextMuted, GEStyle::Type::LabelS, 0.5f);
 }
 
 // =====================================================================
@@ -1109,94 +1162,147 @@ void AGEHUD::DrawSettings()
 	{
 		return;
 	}
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 
 	const float Intro = EaseOut(ScreenAge() / 0.35f);
-	DrawBackdrop(0.9f, 0.7f, false);
+	DrawBackdrop(0.9f, 0.8f, false);
+	Kit.ScreenChrome(TEXT("SETTINGS"));
 
-	// ---------- card ----------
-	const float CardW = Px(780);
-	const float RowH = Px(86);
-	const float CardH = Px(150) + GEStyle::NumSettings * RowH + Px(110);
-	const float CardX = (Canvas->ClipX - CardW) * 0.5f;
-	const float CardY = (Canvas->ClipY - CardH) * 0.5f + Px(30) * (1.0f - Intro);
+	// which of the 5 numbered cards holds the focused row (items 0..6 -> sections 0..4)
+	static const int32 SectionOfItem[GEStyle::NumSettings] = { 0, 1, 2, 3, 4, 4, 4 };
+	const int32 Section = (SelectedItem >= 0 && SelectedItem < GEStyle::NumSettings) ? SectionOfItem[SelectedItem] : 4;
 
-	DrawPanel(CardX, CardY, CardW, CardH, Intro);
-	DrawBox(CardX, CardY, CardW, Px(5), GEStyle::Active().AccentPrimary);
-	DrawGlowLabel(TEXT("SETTINGS"), CardX + Px(48), CardY + Px(36), GEStyle::TextWhite, GEStyle::Active().AccentPrimary, 50);
+	// ---------- card grid: 3 + (1 + wide 1) ----------
+	const float CardW = Px(540);
+	const float Gutter = Px(24);
+	const float GridW = CardW * 3 + Gutter * 2;
+	const float X0 = (Canvas->ClipX - GridW) * 0.5f;
+	const float Row1Y = Px(218) + Px(24) * (1.0f - Intro);
+	const float Row2Y = Row1Y + Px(296);
+	const float CardH = Px(272);
 
-	// ---------- rows ----------
-	const float RowX = CardX + Px(32);
-	const float RowW = CardW - Px(64);
-	for (int32 i = 0; i < GEStyle::NumSettings; i++)
+	// ---------- title, tabs, page indicator ----------
+	Kit.GlowText(TEXT("SETTINGS"), X0, Px(84), Th.TextStrong, Th.AccentPrimary, GEStyle::Type::H1);
+	TArray<FString> Tabs;
+	Tabs.Add(TEXT("MOUSE")); Tabs.Add(TEXT("VIDEO")); Tabs.Add(TEXT("AUDIO")); Tabs.Add(TEXT("CROSSHAIR")); Tabs.Add(TEXT("INTERFACE"));
+	Kit.HeaderTabs(X0 + Px(280), Px(104), Tabs, Section);
+	Kit.PageIndicator(X0 + GridW - Px(190), Px(100), Section + 1, 5, TEXT("SECTION"));
+
+	// small helpers: card frame + numbered heading
+	auto DrawCardFrame = [&](float X, float Y, float W, int32 Number, const TCHAR* Heading, bool bActive)
 	{
-		const float RowY = CardY + Px(130) + i * RowH;
-
-		FString Label;
-		FString Value;
-		float Fraction = -1.0f; // -1 = no slider
-		switch (i)
+		Kit.Panel(X, Y, W, CardH, 12.0f, GECut::BR, bActive);
+		Kit.Text(FString::Printf(TEXT("%02d"), Number), X + Px(28), Y + Px(20), Th.StatusWarning, GEStyle::Type::DataL, 0.0f, true);
+		Kit.Text(Heading, X + Px(82), Y + Px(24), Th.StatusInfo, GEStyle::Type::Title);
+		Kit.Rect(X + Px(28), Y + Px(62), W - Px(56), Px(1), Th.BorderFaint);
+	};
+	// a row of color swatches; returns nothing, the selected one gets a glow + outline
+	auto DrawSwatches = [&](float X, float Y, int32 Count, int32 Selected, bool bFocused, TFunctionRef<FLinearColor(int32)> ColorOf)
+	{
+		const float Size = Px(34);
+		const float SwGap = Px(12);
+		for (int32 i = 0; i < Count; i++)
 		{
-		case 0:
-		{
-			const float Sens = Training->GetSensitivityScale();
-			Label = TEXT("Sensitivity");
-			Value = FString::Printf(TEXT("%.1f"), Sens);
-			Fraction = (Sens - GESensitivity::MinScale) / (GESensitivity::MaxScale - GESensitivity::MinScale);
-			break;
+			const float SX = X + i * (Size + SwGap);
+			if (i == Selected)
+			{
+				Kit.GlowRect(SX, Y, Size, Size, Th.EffectGlow, Px(8));
+			}
+			Kit.ChamferFill(SX, Y, Size, Size, Px(7), GECut::BR, ColorOf(i));
+			Kit.ChamferOutline(SX - Px(4), Y - Px(4), Size + Px(8), Size + Px(8), Px(8), GECut::BR,
+				i == Selected ? (bFocused ? Th.AccentStrong : Th.TextBody) : FLinearColor::Transparent, Px(1.5f));
 		}
-		case 1:
-			Label = TEXT("Field of view");
-			Value = FString::Printf(TEXT("%.0f"), Save->FieldOfView);
-			Fraction = (Save->FieldOfView - MinFov) / (MaxFov - MinFov);
-			break;
-		case 2:
-			Label = TEXT("Volume");
-			Value = FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Save->Volume * 100.0f));
-			Fraction = Save->Volume;
-			break;
-		case 3:
-			Label = TEXT("Crosshair color");
-			Value = GEStyle::GetCrosshairColorName(Save->CrosshairColor);
-			break;
-		case 4:
-			Label = TEXT("UI theme");
-			Value = GEStyle::GetThemeName(Save->UITheme);
-			break;
-		case 5:
-			Label = TEXT("Scanlines");
-			Value = Save->bScanlines ? TEXT("On") : TEXT("Off");
-			break;
-		default:
-			Label = TEXT("Screen glitch");
-			Value = Save->bGlitch ? TEXT("On") : TEXT("Off");
-			break;
-		}
+	};
 
-		// the row itself is a button (click = increase, right-click = decrease)
-		DrawMenuButton(i, RowX, RowY, RowW, RowH - Px(14), Label, TEXT("<   ") + Value + TEXT("   >"), GEStyle::Active().AccentPrimary, Intro);
+	const float Inset = Px(28);
+	const float InnerW = CardW - Inset * 2;
 
-		if (Fraction >= 0.0f)
-		{
-			DrawSlider(RowX + Px(28), RowY + RowH - Px(28), RowW - Px(56), Fraction, GEStyle::Active().AccentPrimary, Intro);
-		}
+	// ---------- 01 MOUSE ----------
+	{
+		const float X = X0, Y = Row1Y;
+		DrawCardFrame(X, Y, CardW, 1, TEXT("MOUSE"), Section == 0);
+		const float Sens = Training->GetSensitivityScale();
+		const float Fraction = (Sens - GESensitivity::MinScale) / (GESensitivity::MaxScale - GESensitivity::MinScale);
+		HitTestItem(0, X + Inset, Y + Px(86), InnerW, Px(60));
+		Kit.Slider(X + Inset, Y + Px(96), InnerW, TEXT("Sensitivity"), Fraction, FString::Printf(TEXT("%.1f"), Sens), SelectedItem == 0);
+		Kit.Text(TEXT("1.0 IS THE DEFAULT. USE A / D OR CLICK."), X + Inset, Y + Px(176), Th.TextMuted, GEStyle::Type::LabelS);
+	}
+	// ---------- 02 VIDEO ----------
+	{
+		const float X = X0 + CardW + Gutter, Y = Row1Y;
+		DrawCardFrame(X, Y, CardW, 2, TEXT("VIDEO"), Section == 1);
+		const float Fraction = (Save->FieldOfView - MinFov) / (MaxFov - MinFov);
+		HitTestItem(1, X + Inset, Y + Px(86), InnerW, Px(60));
+		Kit.Slider(X + Inset, Y + Px(96), InnerW, TEXT("Field of view"), Fraction, FString::Printf(TEXT("%.0f"), Save->FieldOfView), SelectedItem == 1);
+		Kit.Text(TEXT("WIDER SEES MORE, NARROWER IS CLOSER."), X + Inset, Y + Px(176), Th.TextMuted, GEStyle::Type::LabelS);
+	}
+	// ---------- 03 AUDIO ----------
+	{
+		const float X = X0 + (CardW + Gutter) * 2, Y = Row1Y;
+		DrawCardFrame(X, Y, CardW, 3, TEXT("AUDIO"), Section == 2);
+		HitTestItem(2, X + Inset, Y + Px(86), InnerW, Px(60));
+		Kit.Slider(X + Inset, Y + Px(96), InnerW, TEXT("Master volume"), Save->Volume, FString::Printf(TEXT("%03d"), FMath::RoundToInt(Save->Volume * 100.0f)), SelectedItem == 2);
+		Kit.Text(TEXT("HIT, KILL AND MENU SOUNDS."), X + Inset, Y + Px(176), Th.TextMuted, GEStyle::Type::LabelS);
+	}
+	// ---------- 04 CROSSHAIR (swatches + live preview) ----------
+	{
+		const float X = X0, Y = Row2Y;
+		DrawCardFrame(X, Y, CardW, 4, TEXT("CROSSHAIR"), Section == 3);
+		HitTestItem(3, X + Inset, Y + Px(80), Px(290), Px(130));
+		Kit.Text(TEXT("COLOR"), X + Inset, Y + Px(88), SelectedItem == 3 ? Th.TextStrong : Th.TextBody, GEStyle::Type::LabelM);
+		Kit.Text(GEStyle::GetCrosshairColorName(Save->CrosshairColor).ToUpper(), X + Inset + Px(260), Y + Px(86), Th.TextPrimary, GEStyle::Type::DataM, 1.0f, true);
+		DrawSwatches(X + Inset + Px(4), Y + Px(130), GEStyle::NumCrosshairColors, Save->CrosshairColor, SelectedItem == 3,
+			[](int32 i) { return GEStyle::GetCrosshairColor(i); });
+
+		// live preview box
+		const float PW = Px(150), PH = Px(130);
+		const float PX = X + CardW - Inset - PW;
+		const float PY = Y + Px(80);
+		Kit.ChamferFill(PX, PY, PW, PH, Px(8), GECut::BR, Th.BgSunken);
+		Kit.ChamferOutline(PX, PY, PW, PH, Px(8), GECut::BR, Th.BorderFaint, Px(1));
+		Kit.Text(TEXT("PREVIEW"), PX + PW * 0.5f, PY + Px(8), Th.TextMuted, GEStyle::Type::LabelS, 0.5f);
+		DrawCrosshairAt(PX + PW * 0.5f, PY + PH * 0.55f, GEStyle::GetCrosshairColor(Save->CrosshairColor), 0.0f);
+	}
+	// ---------- 05 INTERFACE (theme swatches, scanlines, glitch) ----------
+	{
+		const float X = X0 + CardW + Gutter, Y = Row2Y;
+		const float WideW = CardW * 2 + Gutter;
+		DrawCardFrame(X, Y, WideW, 5, TEXT("INTERFACE"), Section == 4);
+		const float ColW = (WideW - Inset * 2 - Gutter * 2) / 3.0f;
+		const float C0 = X + Inset;
+		const float C1 = C0 + ColW + Gutter;
+		const float C2 = C1 + ColW + Gutter;
+
+		// UI theme
+		HitTestItem(4, C0, Y + Px(80), ColW, Px(130));
+		Kit.Text(TEXT("UI THEME"), C0, Y + Px(88), SelectedItem == 4 ? Th.TextStrong : Th.TextBody, GEStyle::Type::LabelM);
+		Kit.Text(GEStyle::GetThemeName(Save->UITheme).ToUpper(), C0 + ColW, Y + Px(86), Th.TextPrimary, GEStyle::Type::DataM, 1.0f, true);
+		DrawSwatches(C0 + Px(4), Y + Px(130), GEStyle::NumThemes, Save->UITheme, SelectedItem == 4,
+			[](int32 i) { return GEStyle::GetTheme((GEStyle::EGETheme)i).AccentPrimary; });
+
+		// scanlines
+		HitTestItem(5, C1, Y + Px(80), ColW, Px(130));
+		Kit.Toggle(C1, Y + Px(88), ColW, TEXT("Scanlines"), Save->bScanlines, SelectedItem == 5);
+		Kit.Text(TEXT("FAINT CRT LINES ON MENUS."), C1, Y + Px(140), Th.TextMuted, GEStyle::Type::LabelS);
+
+		// glitch
+		HitTestItem(6, C2, Y + Px(80), ColW, Px(130));
+		Kit.Toggle(C2, Y + Px(88), ColW, TEXT("Screen glitch"), Save->bGlitch, SelectedItem == 6);
+		Kit.Text(TEXT("SHORT FLASH WHEN SCREENS CHANGE."), C2, Y + Px(140), Th.TextMuted, GEStyle::Type::LabelS);
 	}
 
 	// ---------- back button ----------
-	const float BackY = CardY + Px(130) + GEStyle::NumSettings * RowH + Px(12);
-	DrawMenuButton(GEStyle::NumSettings, RowX, BackY, Px(220), Px(60), TEXT("BACK"), TEXT(""), GEStyle::Active().TextBody, Intro);
-
-	// ---------- live crosshair preview (beside the card) ----------
 	{
-		const float PW = Px(240);
-		const float PX = CardX + CardW + Px(30);
-		const float PY = CardY;
-		DrawPanel(PX, PY, PW, PW, Intro);
-		DrawLabel(TEXT("PREVIEW"), PX + PW * 0.5f, PY + Px(14), GEStyle::Active().TextBody, 16, 0.5f);
-		DrawCrosshairAt(PX + PW * 0.5f, PY + PW * 0.5f + Px(8), GEStyle::GetCrosshairColor(Save->CrosshairColor), 0.0f);
+		const float BX = X0;
+		const float BY = Row2Y + CardH + Px(28);
+		const float BW = Px(220);
+		const float BH = Px(54);
+		const bool bHover = HitTestItem(GEStyle::NumSettings, BX, BY, BW, BH);
+		Kit.Button(BX, BY, BW, BH, TEXT("BACK"), EGEButtonStyle::Secondary,
+			(SelectedItem == GEStyle::NumSettings || bHover) ? EGEButtonState::Hover : EGEButtonState::Default, false);
+		Kit.Text(TEXT("CLICK / D = INCREASE      RIGHT-CLICK / A = DECREASE      TAB = BACK"), X0 + GridW, BY + Px(18), Th.TextMuted, GEStyle::Type::LabelS, 1.0f);
 	}
-
-	DrawLabel(TEXT("Click / D = increase        Right-click / A = decrease        TAB = back"),
-		Canvas->ClipX * 0.5f, CardY + CardH + Px(28), GEStyle::Active().TextBody, 17, 0.5f);
 }
 
 // =====================================================================
@@ -1205,42 +1311,86 @@ void AGEHUD::DrawSettings()
 
 void AGEHUD::DrawPause()
 {
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 	const float Intro = EaseOut(ScreenAge() / 0.25f);
-	DrawBox(0, 0, Canvas->ClipX, Canvas->ClipY, FLinearColor(0.008f, 0.01f, 0.02f, 0.6f * Intro));
+	DrawBox(0, 0, Canvas->ClipX, Canvas->ClipY, GEStyle::WithAlpha(Th.BgSunken, 0.7f * Intro));
+	Kit.ScreenChrome(TEXT("PAUSED"));
 
 	const TArray<int32> Items = GetPauseItems();
 	const float CardW = Px(520);
-	const float ButtonH = Px(62);
-	const float Gap = Px(12);
-	const float CardH = Px(130) + Items.Num() * (ButtonH + Gap) + Px(40);
+	const float ItemH = Px(54);
+	const float Gap = Px(10);
+	const float CardH = Px(150) + Items.Num() * (ItemH + Gap) + Px(30);
 	const float CardX = (Canvas->ClipX - CardW) * 0.5f;
-	const float CardY = (Canvas->ClipY - CardH) * 0.5f;
+	const float CardY = (Canvas->ClipY - CardH) * 0.5f + Px(20) * (1.0f - Intro);
 
-	DrawPanel(CardX, CardY, CardW, CardH, Intro);
-	DrawBox(CardX, CardY, CardW, Px(5), GEStyle::Active().AccentPrimary);
-	DrawGlowLabel(TEXT("PAUSED"), CardX + CardW * 0.5f, CardY + Px(30), GEStyle::TextWhite, GEStyle::Active().AccentPrimary, 54, 0.5f);
+	Kit.Panel(CardX, CardY, CardW, CardH, 14.0f, GECut::BR, true);
+	Kit.Rect(CardX, CardY, CardW, Px(3), Th.AccentPrimary);
+	Kit.GlowText(TEXT("PAUSED"), CardX + CardW * 0.5f, CardY + Px(24), Th.TextStrong, Th.AccentPrimary, GEStyle::Type::H1, 0.5f);
+	Kit.Text(TEXT("TAB TO RESUME"), CardX + CardW * 0.5f, CardY + Px(92), Th.TextMuted, GEStyle::Type::LabelS, 0.5f);
 
 	for (int32 i = 0; i < Items.Num(); i++)
 	{
 		const TCHAR* Label = TEXT("");
-		FLinearColor Accent = GEStyle::Active().AccentPrimary;
 		switch (Items[i])
 		{
-		case PauseResume:   Label = TEXT("RESUME");    Accent = GEStyle::Green; break;
-		case PauseRestart:  Label = TEXT("RESTART");   Accent = GEStyle::Active().AccentPrimary; break;
-		case PauseSettings: Label = TEXT("SETTINGS");  Accent = GEStyle::Active().TextBody; break;
-		case PauseMainMenu: Label = TEXT("MAIN MENU"); Accent = GEStyle::Red; break;
+		case PauseResume:   Label = TEXT("Resume");    break;
+		case PauseRestart:  Label = TEXT("Restart");   break;
+		case PauseSettings: Label = TEXT("Settings");  break;
+		case PauseMainMenu: Label = TEXT("Main menu"); break;
 		}
-		DrawMenuButton(i, CardX + Px(40), CardY + Px(120) + i * (ButtonH + Gap), CardW - Px(80), ButtonH, Label, TEXT(""), Accent, Intro);
+		const float X = CardX + Px(40);
+		const float Y = CardY + Px(124) + i * (ItemH + Gap);
+		const float W = CardW - Px(80);
+		const bool bHover = HitTestItem(i, X, Y, W, ItemH);
+		Kit.NavItem(X, Y, W, ItemH, i + 1, Label, SelectedItem == i ? EGENavState::Selected : (bHover ? EGENavState::Hover : EGENavState::Default));
 	}
 
-	DrawLabel(TEXT("W / S  or mouse to choose      ENTER / click to select      TAB = resume"),
-		Canvas->ClipX * 0.5f, CardY + CardH + Px(28), GEStyle::Active().TextBody, 17, 0.5f);
+	Kit.Text(TEXT("W / S  OR MOUSE TO CHOOSE      ENTER / CLICK TO SELECT"), Canvas->ClipX * 0.5f, CardY + CardH + Px(24), Th.TextMuted, GEStyle::Type::LabelS, 0.5f);
 }
 
 // =====================================================================
 //                               RESULTS
 // =====================================================================
+
+namespace
+{
+	/** 0 = S, 1 = A, 2 = B, 3 = C, 4 = D from four thresholds (best first). */
+	int32 RankIndex(float Value, const float (&Limits)[4], bool bLowerIsBetter)
+	{
+		for (int32 i = 0; i < 4; i++)
+		{
+			if (bLowerIsBetter ? (Value <= Limits[i]) : (Value >= Limits[i]))
+			{
+				return i;
+			}
+		}
+		return 4;
+	}
+
+	/** Rank thresholds per aim mode (placeholder tuning values, easy to change here). */
+	int32 AimRank(EGEAimMode Mode, float Score)
+	{
+		static const float Gridshot[4] = { 90.0f, 75.0f, 60.0f, 45.0f };
+		static const float Microshot[4] = { 60.0f, 48.0f, 36.0f, 24.0f };
+		static const float Tracking[4] = { 85.0f, 70.0f, 55.0f, 40.0f };
+		static const float Reflex[4] = { 220.0f, 260.0f, 300.0f, 360.0f }; // milliseconds, lower is better
+		switch (Mode)
+		{
+		case EGEAimMode::Microshot: return RankIndex(Score, Microshot, false);
+		case EGEAimMode::Tracking:  return RankIndex(Score, Tracking, false);
+		case EGEAimMode::Reflex:    return RankIndex(Score, Reflex, true);
+		default:                    return RankIndex(Score, Gridshot, false);
+		}
+	}
+
+	int32 PercentRank(float Percent)
+	{
+		static const float Limits[4] = { 90.0f, 80.0f, 65.0f, 50.0f };
+		return RankIndex(Percent, Limits, false);
+	}
+}
 
 void AGEHUD::DrawResults()
 {
@@ -1255,31 +1405,33 @@ void AGEHUD::DrawResults()
 	{
 		return;
 	}
+	FGEUIKit Kit(this);
+	const GEStyle::FGETheme& Th = GEStyle::Active();
 
 	// ---------- gather what to show ----------
-	FLinearColor Accent = GEStyle::Active().AccentPrimary;
 	FString Header;
 	float Score = 0.0f;
 	FString Unit;
 	TArray<FGEStatLine> Lines;
 	EGEAimMode Mode = EGEAimMode::Gridshot;
+	int32 Rank = 4;
 
 	if (bAim)
 	{
 		Mode = Aim->GetMode();
-		Accent = GEAimModes::GetColor(Mode);
 		Header = GEAimModes::GetName(Mode).ToUpper() + TEXT("   //   RESULTS");
 		Score = Aim->GetLastScore();
 		Unit = GEAimModes::GetScoreUnit(Mode);
 		Lines = Aim->GetResultLines();
+		Rank = AimRank(Mode, Score);
 	}
 	else if (ResultKind == EGEResultKind::Training)
 	{
 		const FGETrainingStats& S = Training->GetStats();
-		Accent = GEStyle::Green;
 		Header = TEXT("TRAINING CENTER   //   RESULTS");
 		Score = (float)S.Kills;
 		Unit = TEXT("kills");
+		Rank = PercentRank(S.GetAccuracyPercent());
 		Lines.Add({ TEXT("Accuracy"), FString::Printf(TEXT("%.0f%%  (%d / %d)"), S.GetAccuracyPercent(), S.Hits, S.Shots) });
 		Lines.Add({ TEXT("Headshot kills"), FString::Printf(TEXT("%.0f%%"), S.GetHeadshotPercent()) });
 		Lines.Add({ TEXT("First-shot accuracy"), FString::Printf(TEXT("%.0f%%  (%d / %d)"), S.GetFirstShotAccuracyPercent(), S.FirstShotHits, S.FirstShots) });
@@ -1288,12 +1440,12 @@ void AGEHUD::DrawResults()
 	}
 	else
 	{
-		Accent = GEStyle::Magenta;
 		Header = TEXT("FLICK OPTIMIZER   //   RESULTS");
 		if (Training->HasFlickSummary())
 		{
 			const FGEFlickSummary& F = Training->GetLastFlickSummary();
 			Score = (float)F.TotalHits;
+			Rank = PercentRank(F.GetAccuracyPercent());
 			Lines.Add({ TEXT("Targets"), FString::Printf(TEXT("%d"), F.TotalTargets) });
 			Lines.Add({ TEXT("Accuracy"), FString::Printf(TEXT("%.0f%%"), F.GetAccuracyPercent()) });
 			Lines.Add({ TEXT("Avg time to hit"), FString::Printf(TEXT("%.2f s"), F.AverageTimeToHit) });
@@ -1311,176 +1463,171 @@ void AGEHUD::DrawResults()
 	// ---------- card ----------
 	const float Age = ScreenAge();
 	const float Intro = EaseOut(Age / 0.4f);
-	DrawBackdrop(0.9f, 0.65f, false);
+	DrawBackdrop(0.9f, 0.75f, false);
+	Kit.ScreenChrome(TEXT("RESULTS"));
 
 	const float LeftW = Px(760);
 	const float CardW = bTips ? Px(1320) : LeftW;
-	const float CardH = Px(720);
+	const float CardH = Px(740);
 	const float CardX = (Canvas->ClipX - CardW) * 0.5f;
-	const float CardY = (Canvas->ClipY - CardH) * 0.5f + Px(40) * (1.0f - Intro);
+	const float CardY = (Canvas->ClipY - CardH) * 0.5f + Px(30) * (1.0f - Intro);
 	const float TextX = CardX + Px(48);
 	const float ColW = LeftW - Px(96); // width of the left column
 
-	DrawPanel(CardX, CardY, CardW, CardH, Intro);
-	DrawBox(CardX, CardY, CardW, Px(6), Accent);
-	DrawLabel(Header, TextX, CardY + Px(38), Accent, 22);
+	Kit.Panel(CardX, CardY, CardW, CardH, 16.0f, GECut::BR, true);
+	Kit.Rect(CardX, CardY, CardW, Px(3), Th.AccentPrimary);
+	Kit.Text(Header, TextX, CardY + Px(34), Th.TextPrimary, GEStyle::Type::LabelL);
 
-	// ---------- big score (counts up during the intro) ----------
+	// ---------- big score (counts up during the intro, mono) ----------
 	const float ShownScore = Score * EaseOut(Age / 0.8f);
 	const FString Number = bAim ? GEAimModes::FormatScoreNumber(Mode, ShownScore) : FString::FromInt(FMath::RoundToInt(ShownScore));
-	const FVector2D NumberSize = MeasureText(Number, 120, true);
-	DrawGlowLabel(Number, TextX, CardY + Px(80), GEStyle::TextWhite, Accent, 120, 0.0f, true);
-	DrawLabel(Unit, TextX + NumberSize.X + Px(18), CardY + Px(80) + NumberSize.Y - Px(58), GEStyle::Active().TextBody, 28);
+	const float NumberSize = 130.0f;
+	const FVector2D NumberDims = Kit.Measure(Number, NumberSize, true);
+	Kit.GlowText(Number, TextX, CardY + Px(66), Th.TextStrong, Th.AccentPrimary, NumberSize, 0.0f, true);
+	Kit.Text(Unit.ToUpper(), TextX + NumberDims.X + Px(16), CardY + Px(66) + NumberDims.Y - Px(44), Th.TextBody, GEStyle::Type::LabelL);
 
-	// ---------- personal best (aim modes) ----------
-	const float BestY = CardY + Px(250);
+	// ---------- rank letter (S / A / B / C / D) ----------
+	{
+		static const TCHAR* Letters[5] = { TEXT("S"), TEXT("A"), TEXT("B"), TEXT("C"), TEXT("D") };
+		const FLinearColor RankColors[5] = { Th.StatusWarning, Th.StatusSuccess, Th.StatusInfo, Th.TextBody, Th.StatusDanger };
+		const float RX = TextX + ColW - Px(50);
+		Kit.Text(TEXT("RANK"), RX, CardY + Px(34), Th.TextMuted, GEStyle::Type::LabelM, 0.5f);
+		Kit.GlowText(Letters[Rank], RX, CardY + Px(58), RankColors[Rank], RankColors[Rank], 110.0f, 0.5f);
+	}
+
+	// ---------- personal best banner / value ----------
+	const float BestY = CardY + Px(246);
 	if (bAim)
 	{
 		if (Aim->WasNewBest())
 		{
-			const float Pulse = 0.8f + 0.2f * FMath::Sin(NowTime * 6.0f);
-			DrawBox(TextX, BestY, Px(340), Px(48), GEStyle::WithAlpha(GEStyle::Gold, Pulse));
-			DrawLabel(TEXT("NEW PERSONAL BEST!"), TextX + Px(170), BestY + Px(11), FLinearColor(0.06f, 0.04f, 0.0f), 22, 0.5f, false, false);
+			const float Pulse = 0.5f + 0.5f * FMath::Sin(NowTime * 6.0f);
+			const float BW = Px(380), BH = Px(46);
+			Kit.GlowRect(TextX, BestY, BW, BH, GEStyle::WithAlpha(Th.StatusWarning, 0.25f + 0.2f * Pulse), Px(10));
+			Kit.ChamferFill(TextX, BestY, BW, BH, Px(10), GECut::BR, Th.StatusWarning);
+			Kit.TextCentered(TEXT("NEW PERSONAL BEST"), TextX + BW * 0.5f, BestY, BH, Th.TextOnAccent, GEStyle::Type::Title, 0.5f);
 		}
 		else
 		{
 			float Best = 0.0f;
-			DrawLabel(TEXT("PERSONAL BEST"), TextX, BestY + Px(4), GEStyle::Active().TextBody, 16);
-			DrawLabel(Aim->GetBestScore(Mode, Best) ? GEAimModes::FormatScore(Mode, Best) : FString(TEXT("-")),
-				TextX + Px(180), BestY, GEStyle::Gold, 26, 0.0f, true);
+			Kit.Text(TEXT("PERSONAL BEST"), TextX, BestY + Px(8), Th.TextMuted, GEStyle::Type::LabelM);
+			Kit.Text(Aim->GetBestScore(Mode, Best) ? GEAimModes::FormatScore(Mode, Best) : FString(TEXT("-")),
+				TextX + Px(190), BestY + Px(2), Th.StatusWarning, GEStyle::Type::DataL, 0.0f, true);
 		}
 	}
 	else
 	{
-		DrawLabel(TEXT("Session saved to your history."), TextX, BestY + Px(4), GEStyle::Active().TextBody, 18);
+		Kit.Text(TEXT("SESSION SAVED TO YOUR HISTORY."), TextX, BestY + Px(10), Th.TextMuted, GEStyle::Type::LabelM);
 	}
 
-	// ---------- stats rows ----------
-	const float RowH = Px(46);
+	// ---------- stat rows ----------
+	const float RowH = Px(44);
 	for (int32 i = 0; i < Lines.Num(); i++)
 	{
-		const float RowY = CardY + Px(320) + i * RowH;
-		DrawLabel(Lines[i].Label, TextX, RowY + Px(4), GEStyle::Active().TextBody, 22);
-		DrawLabel(Lines[i].Value, TextX + ColW, RowY, GEStyle::TextWhite, 26, 1.0f, true);
-		DrawBox(TextX, RowY + RowH - Px(8), ColW, Px(1), GEStyle::PanelBorder);
+		Kit.StatRow(TextX, CardY + Px(316) + i * RowH, ColW, Lines[i].Label, Lines[i].Value);
 	}
 
-	// ---------- AI Coach tips (Training Center / Flick Optimizer) ----------
+	// ---------- AI Coach tips as cards (Training Center / Flick Optimizer) ----------
 	if (bTips)
 	{
 		const float TipsX = CardX + LeftW + Px(16);
 		const float TipsW = CardW - LeftW - Px(64);
-		DrawBox(TipsX - Px(24), CardY + Px(40), Px(1), CardH - Px(80), GEStyle::PanelBorder);
-		DrawGlowLabel(TEXT("AI COACH"), TipsX, CardY + Px(32), GEStyle::TextWhite, GEStyle::Green, 40);
-		DrawLabel(TEXT("YOUR TOP 3 TIPS"), TipsX, CardY + Px(100), GEStyle::Active().TextBody, 16);
+		Kit.Rect(TipsX - Px(24), CardY + Px(40), Px(1), CardH - Px(80), Th.BorderFaint);
+		Kit.GlowText(TEXT("AI COACH"), TipsX, CardY + Px(28), Th.TextStrong, Th.StatusInfo, GEStyle::Type::H2);
+		Kit.Text(TEXT("YOUR TOP 3 TIPS"), TipsX, CardY + Px(76), Th.TextMuted, GEStyle::Type::LabelM);
 
-		float TipY = CardY + Px(134);
+		float TipY = CardY + Px(108);
 		if (Training->HasCoachReport())
 		{
 			const FGECoachReport& Report = Training->GetCoachReport();
+			const float TextW = TipsW - Px(84);
 			for (int32 i = 0; i < Report.Tips.Num() && i < 3; i++)
 			{
-				DrawLabel(FString::FromInt(i + 1), TipsX, TipY, GEStyle::Green, 28, 0.0f, true);
-				TipY = DrawWrappedLabel(Report.Tips[i].Text, TipsX + Px(36), TipY + Px(2), TipsW - Px(36), GEStyle::TextWhite, 21);
-				TipY += Px(22);
+				const float CardTipH = MeasureWrapped(Report.Tips[i].Text, TextW, GEStyle::Type::BodyL) + Px(28);
+				Kit.Panel(TipsX, TipY, TipsW, CardTipH, 8.0f, GECut::BR, true);
+				Kit.Rect(TipsX, TipY, Px(3), CardTipH, Th.StatusSuccess);
+				Kit.Text(FString::Printf(TEXT("%02d"), i + 1), TipsX + Px(16), TipY + Px(12), Th.StatusWarning, GEStyle::Type::DataL, 0.0f, true);
+				DrawWrappedLabel(Report.Tips[i].Text, TipsX + Px(68), TipY + Px(14), TextW, Th.TextBody, GEStyle::Type::BodyL);
+				TipY += CardTipH + Px(12);
 			}
 			if (Report.Trends.Num() > 0)
 			{
-				DrawLabel(TEXT("TRENDS"), TipsX, TipY + Px(4), GEStyle::Active().TextBody, 16);
-				TipY += Px(34);
+				Kit.Text(TEXT("TRENDS"), TipsX, TipY + Px(2), Th.TextMuted, GEStyle::Type::LabelM);
+				TipY += Px(30);
 				for (int32 i = 0; i < Report.Trends.Num() && i < 3; i++)
 				{
-					TipY = DrawWrappedLabel(Report.Trends[i], TipsX, TipY, TipsW, GEStyle::Active().TextBody, 18);
-					TipY += Px(8);
+					TipY = DrawWrappedLabel(Report.Trends[i], TipsX, TipY, TipsW, Th.TextBody, GEStyle::Type::BodyM);
+					TipY += Px(6);
 				}
 			}
 		}
 		else
 		{
-			DrawWrappedLabel(TEXT("No coach tips yet. Play a longer session to get tips."), TipsX, TipY, TipsW, GEStyle::Active().TextBody, 21);
+			DrawWrappedLabel(TEXT("No coach tips yet. Play a longer session to get tips."), TipsX, TipY, TipsW, Th.TextBody, GEStyle::Type::BodyL);
 		}
 	}
 
 	// ---------- buttons side by side ----------
-	const float ButtonY = CardY + CardH - Px(100);
+	const float ButtonY = CardY + CardH - Px(96);
 	const float ButtonW = (ColW - Px(16)) * 0.5f;
-	DrawMenuButton(0, TextX, ButtonY, ButtonW, Px(62), TEXT("PLAY AGAIN"), TEXT(""), Accent, Intro);
-	DrawMenuButton(1, TextX + ButtonW + Px(16), ButtonY, ButtonW, Px(62), TEXT("MAIN MENU"), TEXT(""), GEStyle::Active().TextBody, Intro);
+	const float ButtonH = Px(58);
+	const bool bHoverPlay = HitTestItem(0, TextX, ButtonY, ButtonW, ButtonH);
+	const bool bHoverMenu = HitTestItem(1, TextX + ButtonW + Px(16), ButtonY, ButtonW, ButtonH);
+	Kit.Button(TextX, ButtonY, ButtonW, ButtonH, TEXT("PLAY AGAIN"), EGEButtonStyle::Primary,
+		(SelectedItem == 0 || bHoverPlay) ? EGEButtonState::Hover : EGEButtonState::Default);
+	Kit.Button(TextX + ButtonW + Px(16), ButtonY, ButtonW, ButtonH, TEXT("MAIN MENU"), EGEButtonStyle::Secondary,
+		(SelectedItem == 1 || bHoverMenu) ? EGEButtonState::Hover : EGEButtonState::Default);
 
-	DrawLabel(TEXT("ENTER = select        R / click Play Again        TAB = main menu"),
-		Canvas->ClipX * 0.5f, CardY + CardH + Px(28), GEStyle::Active().TextBody, 17, 0.5f);
+	Kit.Text(TEXT("ENTER = SELECT        R / CLICK PLAY AGAIN        TAB = MAIN MENU"),
+		Canvas->ClipX * 0.5f, CardY + CardH + Px(24), Th.TextMuted, GEStyle::Type::LabelS, 0.5f);
 }
 
 // =====================================================================
 //                               WIDGETS
 // =====================================================================
 
-bool AGEHUD::DrawMenuButton(int32 Index, float X, float Y, float W, float H, const FString& Label,
-	const FString& RightText, FLinearColor Accent, float Alpha)
+bool AGEHUD::HitTestItem(int32 Index, float X, float Y, float W, float H)
 {
-	while (ButtonAnim.Num() <= Index)
-	{
-		ButtonAnim.Add(0.0f);
-	}
-
-	// ---------- mouse ----------
 	const bool bHovered = bHasMouse && MouseX >= X && MouseX <= X + W && MouseY >= Y && MouseY <= Y + H;
 	if (bHovered)
 	{
 		HoveredItem = Index;
 		if (bMouseMoved)
 		{
-			SelectedItem = Index; // moving the mouse over a button selects it
+			SelectedItem = Index; // moving the mouse over an item selects it
 		}
-	}
-
-	// ---------- smooth highlight animation ----------
-	const bool bSelected = (SelectedItem == Index);
-	float& Anim = ButtonAnim[Index];
-	Anim = FMath::FInterpTo(Anim, bSelected ? 1.0f : 0.0f, FrameDeltaTime, 14.0f);
-
-	// ---------- background ----------
-	const FLinearColor SelectedFill(Accent.R * 0.22f, Accent.G * 0.22f, Accent.B * 0.22f, 0.9f);
-	FLinearColor Fill = FMath::Lerp(GEStyle::ButtonFill, SelectedFill, Anim);
-	Fill.A *= Alpha;
-	DrawBox(X, Y, W, H, Fill);
-
-	// accent bar on the left (grows when selected)
-	DrawBox(X, Y, Px(3) + Px(5) * Anim, H, GEStyle::WithAlpha(Accent, (0.35f + 0.65f * Anim) * Alpha));
-
-	// thin outline when selected
-	if (Anim > 0.01f)
-	{
-		const FLinearColor Border = GEStyle::WithAlpha(Accent, 0.45f * Anim * Alpha);
-		DrawBox(X, Y, W, Px(1), Border);
-		DrawBox(X, Y + H - Px(1), W, Px(1), Border);
-		DrawBox(X + W - Px(1), Y, Px(1), H, Border);
-	}
-
-	// ---------- text ----------
-	const FVector2D LabelSize = MeasureText(Label, 24);
-	FLinearColor LabelColor = FMath::Lerp(FLinearColor(0.85f, 0.88f, 0.94f), GEStyle::TextWhite, Anim);
-	LabelColor.A = Alpha;
-	DrawLabel(Label, X + Px(26) + Px(8) * Anim, Y + (H - LabelSize.Y) * 0.5f, LabelColor, 24);
-
-	if (!RightText.IsEmpty())
-	{
-		const FVector2D RightSize = MeasureText(RightText, 20, true);
-		FLinearColor RightColor = RightText.StartsWith(TEXT("BEST")) ? GEStyle::Gold : GEStyle::Active().TextBody;
-		RightColor.A = Alpha * (0.75f + 0.25f * Anim);
-		DrawLabel(RightText, X + W - Px(22), Y + (H - RightSize.Y) * 0.5f, RightColor, 20, 1.0f, true);
 	}
 	return bHovered;
 }
 
-void AGEHUD::DrawSlider(float X, float Y, float W, float Fraction, FLinearColor Accent, float Alpha)
+float AGEHUD::MeasureWrapped(const FString& Text, float MaxWidth, float PixelSize)
 {
-	Fraction = FMath::Clamp(Fraction, 0.0f, 1.0f);
-	// track, filled part, knob
-	DrawBox(X, Y, W, Px(4), FLinearColor(1.0f, 1.0f, 1.0f, 0.1f * Alpha));
-	DrawBox(X, Y, W * Fraction, Px(4), GEStyle::WithAlpha(Accent, Alpha));
-	DrawBox(X + W * Fraction - Px(5), Y - Px(5), Px(10), Px(14), GEStyle::WithAlpha(GEStyle::TextWhite, Alpha));
+	// same wrapping rule as DrawWrappedLabel, but nothing is drawn
+	TArray<FString> Words;
+	Text.ParseIntoArray(Words, TEXT(" "), true);
+	const float LineH = MeasureText(TEXT("Ag"), PixelSize).Y + Px(4);
+	FString Line;
+	int32 NumLines = 0;
+	for (const FString& Word : Words)
+	{
+		const FString Test = Line.IsEmpty() ? Word : Line + TEXT(" ") + Word;
+		if (MeasureText(Test, PixelSize).X > MaxWidth && !Line.IsEmpty())
+		{
+			NumLines++;
+			Line = Word;
+		}
+		else
+		{
+			Line = Test;
+		}
+	}
+	if (!Line.IsEmpty())
+	{
+		NumLines++;
+	}
+	return NumLines * LineH;
 }
+
 
 // =====================================================================
 //                           DRAWING HELPERS
