@@ -5,8 +5,11 @@
 #include "GEHittable.h"
 #include "GETrainingTypes.h"
 #include "GETrainingCenter.h"
+#include "GEFlickTypes.h"
 #include "GETrainingManager.generated.h"
 
+class UGEFlickTracker;
+class UGESaveGame;
 class AGEBot;
 class AGECharacter;
 class UGEWeaponComponent;
@@ -111,6 +114,27 @@ public:
 	/** The player's weapon component, or null. */
 	UGEWeaponComponent* GetPlayerWeapon() const;
 
+	// ---- Phase 4: Flick Optimizer ----
+	/** Summary of the last finished flick session (valid when HasFlickSummary()). Phase 5 coach: read this. */
+	const FGEFlickSummary& GetLastFlickSummary() const { return LastFlickSummary; }
+	bool HasFlickSummary() const { return bHasFlickSummary; }
+	/** The tracker with the per-target records (path, overshoot...). */
+	UGEFlickTracker* GetFlickTracker() const { return FlickTracker; }
+	/** The saved profile (session history + sensitivity). Phase 5 coach: GetSaveGame()->GetSessions(). */
+	UGESaveGame* GetSaveGame() const { return SaveGame; }
+
+	// ---- Phase 4: mouse sensitivity (stored in the save file) ----
+	/** Multiplier applied to look input by AGEPlayerController. 1.0 = unchanged. */
+	float GetSensitivityScale() const { return SensitivityScale; }
+	void SetSensitivityScale(float NewScale);
+	int32 GetMouseDpi() const { return MouseDpi; }
+	void SetMouseDpi(int32 NewDpi);
+	/** Approximate centimetres of mouse travel for a full 360 turn, from DPI and scale (see GESensitivity). */
+	float GetCm360() const { return Cm360ForScale(SensitivityScale); }
+	float Cm360ForScale(float Scale) const;
+	/** Sets the scale from the last flick suggestion. */
+	void ApplyFlickSuggestion();
+
 	/** Display names. */
 	static FString ModeToString(EGETrainingMode M);
 
@@ -128,6 +152,12 @@ private:
 	UFUNCTION()
 	void HandleShotFired(int32 WeaponIndexFired, bool bFirstShot, float SpreadDegrees);
 
+	// Flick mode
+	void TickFlick(float Now);
+	void SpawnNextFlickTarget(float Now);
+	void FinishSession();	// builds the flick summary and saves the session record
+	void SaveProfile();
+
 	void BindToWeapon();
 	void UnbindFromWeapon();
 	void SpawnSessionBots();
@@ -139,6 +169,23 @@ private:
 	TArray<TObjectPtr<AGEBot>> Bots;
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<AGEBot>> FlickBots;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UGEFlickTracker> FlickTracker;
+	UPROPERTY(Transient)
+	TObjectPtr<UGESaveGame> SaveGame;
+	UPROPERTY(Transient)
+	TObjectPtr<AGEBot> CurrentFlickTarget;
+
+	FGEFlickSettings FlickSettings;
+	FGEFlickSummary LastFlickSummary;
+	bool bHasFlickSummary = false;
+	float FlickTargetStartTime = 0.0f;
+	float FlickNextSpawnTime = 0.0f;
+	float FlickAnchorYaw = 0.0f;
+
+	float SensitivityScale = 1.0f;
+	int32 MouseDpi = GESensitivity::DefaultMouseDpi;
 
 	TWeakObjectPtr<AGETrainingCenter> Center;
 	TWeakObjectPtr<UGEWeaponComponent> BoundWeapon;

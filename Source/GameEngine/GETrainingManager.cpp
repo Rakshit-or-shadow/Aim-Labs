@@ -3,6 +3,9 @@
 #include "GECharacter.h"
 #include "GETrainingCenter.h"
 #include "GEWeaponComponent.h"
+#include "GEFlickTracker.h"
+#include "GESaveGame.h"
+#include "GameFramework/Character.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -24,6 +27,16 @@ UGETrainingManager* UGETrainingManager::Get(const UObject* WorldContext)
 void UGETrainingManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	// Phase 4: flick tracker and the saved profile (sensitivity + history).
+	FlickTracker = NewObject<UGEFlickTracker>(this);
+	FlickTracker->Settings = FlickSettings;
+	SaveGame = UGESaveGame::LoadOrCreate();
+	if (SaveGame)
+	{
+		SensitivityScale = FMath::Clamp(SaveGame->SensitivityScale, GESensitivity::MinScale, GESensitivity::MaxScale);
+		MouseDpi = FMath::Clamp(SaveGame->MouseDpi, GESensitivity::MinDpi, GESensitivity::MaxDpi);
+	}
 
 	// Difficulty presets (index = EGEDifficulty). Tune the numbers here.
 	Presets.Reset();
@@ -95,6 +108,10 @@ void UGETrainingManager::Tick(float DeltaTime)
 	if (bSessionRunning)
 	{
 		Stats.Duration += DeltaTime;
+		if (Mode == EGETrainingMode::Flick)
+		{
+			TickFlick(GetWorld()->GetTimeSeconds());
+		}
 	}
 
 	const float Now = GetWorld()->GetTimeSeconds();
@@ -147,6 +164,10 @@ void UGETrainingManager::HandleShotHit(AActor* Target, EGEHitZone Zone, float Da
 		return;
 	}
 	bPendingHit = true;
+	if (FlickTracker && Bot == CurrentFlickTarget)
+	{
+		FlickTracker->NotifyHit(Now); // flick: time to hit
+	}
 	if (Bot->GetFirstHitTime() < 0.0f)
 	{
 		Bot->SetFirstHitTime(Now); // time-to-kill starts at the first hit on this bot
@@ -166,6 +187,10 @@ void UGETrainingManager::HandleShotHit(AActor* Target, EGEHitZone Zone, float Da
 
 void UGETrainingManager::HandleShotFired(int32 WeaponIndexFired, bool bFirstShot, float SpreadDegrees)
 {
+	if (bSessionRunning && FlickTracker && CurrentFlickTarget)
+	{
+		FlickTracker->NotifyShot(GetWorld()->GetTimeSeconds()); // flick: time to first shot
+	}
 	if (bSessionRunning)
 	{
 		Stats.Shots++;
@@ -219,6 +244,21 @@ void UGETrainingManager::StartSession()
 	bPendingHit = false;
 	bSessionRunning = true;
 
+	// Phase 4: reset flick state. The first target appears after a short delay.
+	CurrentFlickTarget = nullptr;
+	bHasFlickSummary = false;
+	LastFlickSummary = FGEFlickSummary();
+	if (FlickTracker) { FlickTracker->Reset(); }
+	FlickNextSpawnTime = GetWorld()->GetTimeSeconds() + 1.0f;
+	if (bInTrainingCenter && Center.IsValid())
+	{
+		FlickAnchorYaw = Center->GetActorRotation().Yaw;
+	}
+	else if (APlayerController* StartPC = GetPC())
+	{
+		FlickAnchorYaw = StartPC->GetControlRotation().Yaw;
+	}
+
 	if (UGEWeaponComponent* Weapon = GetPlayerWeapon())
 	{
 		Weapon->RefillAllAmmo();
@@ -235,6 +275,7 @@ void UGETrainingManager::StopSession()
 		return;
 	}
 	bSessionRunning = false;
+	FinishSession();
 	DestroyAllBots();
 	OnSessionStopped.Broadcast(); // Stats stay readable until the next session starts
 }
@@ -388,4 +429,174 @@ void UGETrainingManager::PlayPing(float Hz, float Length, float Volume)
 	Wave->bLooping = false;
 	Wave->QueueAudio(reinterpret_cast<const uint8*>(Samples.GetData()), NumSamples * sizeof(int16));
 	UGameplayStatics::PlaySound2D(GetWorld(), Wave);
+}
+
+// --------------------------------------------------------------------------
+// Phase 4: Flick Optimizer
+// --------------------------------------------------------------------------
+
+/** Runs the one-target-at-a-time loop: spawn, record the mouse, end on kill or timeout, wait, repeat. */
+void UGETrainingManager::TickFlick(float Now)
+{
+	APlayerController* PC = GetPC();
+	if (!PC || !FlickTracker)
+	{
+		return;
+	}
+	// While the menu is open the flick drill pauses (the current target is thrown away, not counted as a miss).
+	if (bMenuOpen)
+	{
+		if (CurrentFlickTarget)
+		{
+			FlickTracker->AbortTarget();
+			DestroyFlickTarget(CurrentFlickTarget);
+			CurrentFlickTarget = nullptr;
+		}
+		FlickNextSpawnTime = Now + 1.0f;
+		return;
+	}
+
+	if (CurrentFlickTarget)
+	{
+		FlickTracker->Sample(Now, PC->GetControlRotation());
+		const bool bDead = !CurrentFlickTarget->IsAlive();
+		const bool bTimedOut = (Now - FlickTargetStartTime) >= FlickSettings.TargetTimeout;
+		if (bDead || bTimedOut)
+		{
+			FlickTracker->EndTarget(Now, !bDead);
+			DestroyFlickTarget(CurrentFlickTarget);
+			CurrentFlickTarget = nullptr;
+			FlickNextSpawnTime = Now + FlickSettings.NextTargetDelay;
+		}
+	}
+	else if (Now >= FlickNextSpawnTime)
+	{
+		SpawnNextFlickTarget(Now);
+	}
+}
+
+/** Picks a random spot on the ground in front of the player (wide yaw range, varied height) and spawns a target there. */
+void UGETrainingManager::SpawnNextFlickTarget(float Now)
+{
+	APlayerController* PC = GetPC();
+	const ACharacter* Char = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	if (!PC || !Char)
+	{
+		return;
+	}
+	const FVector Origin = Char->GetActorLocation();
+	const float GroundZ = Origin.Z - Char->GetSimpleCollisionHalfHeight();
+	const AGETrainingCenter* TC = Center.Get();
+	const bool bKeepInsideArena = bInTrainingCenter && TC;
+
+	// Try a few random spots; reject those outside the Training Center floor.
+	FVector Feet = Origin + FRotator(0.0f, FlickAnchorYaw, 0.0f).Vector() * FlickSettings.MinDistance;
+	Feet.Z = GroundZ;
+	for (int32 Try = 0; Try < 12; ++Try)
+	{
+		const float Azimuth = FMath::FRandRange(-FlickSettings.MaxAzimuthDeg, FlickSettings.MaxAzimuthDeg);
+		const float Distance = FMath::FRandRange(FlickSettings.MinDistance, FlickSettings.MaxDistance);
+		FVector Candidate = Origin + FRotator(0.0f, FlickAnchorYaw + Azimuth, 0.0f).Vector() * Distance;
+		Candidate.Z = GroundZ;
+		if (bKeepInsideArena)
+		{
+			const FVector Local = TC->GetActorTransform().InverseTransformPosition(Candidate);
+			if (FMath::Abs(Local.Y) > FlickSettings.AreaHalfWidth || Local.X < FlickSettings.AreaMinX || Local.X > FlickSettings.AreaMaxX)
+			{
+				continue;
+			}
+		}
+		Feet = Candidate;
+		break;
+	}
+	// Some targets float for vertical (pitch) variety.
+	if (FMath::FRand() < FlickSettings.RaiseChance)
+	{
+		Feet.Z += FMath::FRandRange(0.0f, FlickSettings.MaxRaise);
+	}
+
+	AGEBot* Target = SpawnFlickTarget(Feet);
+	if (!Target)
+	{
+		return;
+	}
+	CurrentFlickTarget = Target;
+	FlickTargetStartTime = Now;
+
+	FVector ViewLoc;
+	FRotator ViewRot;
+	PC->GetPlayerViewPoint(ViewLoc, ViewRot);
+	FlickTracker->BeginTarget(Now, ViewLoc, PC->GetControlRotation(), Feet + FVector(0.0f, 0.0f, FlickSettings.AimHeight));
+}
+
+/** Called when a session stops: builds the flick summary and appends a record to the save file. */
+void UGETrainingManager::FinishSession()
+{
+	const bool bFlick = (Mode == EGETrainingMode::Flick) && FlickTracker;
+	if (bFlick)
+	{
+		FlickTracker->AbortTarget(); // an unfinished target is not counted
+		LastFlickSummary = FlickTracker->BuildSummary(SensitivityScale, GetCm360());
+		bHasFlickSummary = LastFlickSummary.TotalTargets > 0;
+	}
+	CurrentFlickTarget = nullptr;
+
+	if (SaveGame && (Stats.Shots > 0 || bHasFlickSummary))
+	{
+		FGESessionRecord Record;
+		Record.Date = FDateTime::Now();
+		Record.Mode = Mode;
+		Record.Difficulty = Difficulty;
+		Record.WeaponIndex = WeaponIndex;
+		if (const UGEWeaponComponent* Weapon = GetPlayerWeapon())
+		{
+			if (Weapon->GetWeapons().IsValidIndex(WeaponIndex))
+			{
+				Record.WeaponName = Weapon->GetWeapons()[WeaponIndex].Name;
+			}
+		}
+		Record.Stats = Stats;
+		Record.SensitivityScale = SensitivityScale;
+		Record.bHasFlick = bHasFlickSummary;
+		if (bHasFlickSummary) { Record.Flick = LastFlickSummary; }
+		SaveGame->AddSession(Record);
+	}
+	SaveProfile();
+}
+
+void UGETrainingManager::SaveProfile()
+{
+	if (SaveGame)
+	{
+		SaveGame->SensitivityScale = SensitivityScale;
+		SaveGame->MouseDpi = MouseDpi;
+		SaveGame->Save();
+	}
+}
+
+float UGETrainingManager::Cm360ForScale(float Scale) const
+{
+	// counts for a full turn = 360 / (degrees per count); inches = counts / DPI; 1 inch = 2.54 cm.
+	const float DegreesPerCount = GESensitivity::BaseDegreesPerCount * FMath::Max(Scale, KINDA_SMALL_NUMBER);
+	return (360.0f / DegreesPerCount) / FMath::Max(MouseDpi, 1) * 2.54f;
+}
+
+void UGETrainingManager::SetSensitivityScale(float NewScale)
+{
+	SensitivityScale = FMath::Clamp(NewScale, GESensitivity::MinScale, GESensitivity::MaxScale);
+	SaveProfile();
+}
+
+void UGETrainingManager::SetMouseDpi(int32 NewDpi)
+{
+	MouseDpi = FMath::Clamp(NewDpi, GESensitivity::MinDpi, GESensitivity::MaxDpi);
+	SaveProfile();
+}
+
+void UGETrainingManager::ApplyFlickSuggestion()
+{
+	if (bHasFlickSummary && LastFlickSummary.bHasSuggestion)
+	{
+		SetSensitivityScale(LastFlickSummary.SuggestedScale);
+	}
 }

@@ -4,6 +4,7 @@
 #include "GECharacter.h"
 #include "GEWeaponComponent.h"
 #include "GETrainingManager.h"
+#include "GEFlickTypes.h"
 #include "GameFramework/PlayerController.h"
 
 // ---------------------------------------------------------------------------
@@ -72,7 +73,7 @@ void AGEHUD::DrawButton(const FString& Label, const FName& Name, float X, float 
 
 void AGEHUD::DrawTrainingMenu(UGETrainingManager& Manager)
 {
-	const float PanelW = 640.0f, PanelH = 470.0f;
+	const float PanelW = 640.0f, PanelH = 570.0f;
 	const float PX = (Canvas->ClipX - PanelW) * 0.5f;
 	const float PY = (Canvas->ClipY - PanelH) * 0.5f;
 	DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.85f), PX, PY, PanelW, PanelH);
@@ -86,8 +87,8 @@ void AGEHUD::DrawTrainingMenu(UGETrainingManager& Manager)
 	// Mode row
 	DrawText(TEXT("Mode"), FLinearColor::Yellow, PX + 20.0f, Y, GEngine->GetSmallFont());
 	Y += 20.0f;
-	const EGETrainingMode Modes[3] = { EGETrainingMode::Static, EGETrainingMode::Strafing, EGETrainingMode::Peek };
-	for (int32 i = 0; i < 3; ++i)
+	const EGETrainingMode Modes[4] = { EGETrainingMode::Static, EGETrainingMode::Strafing, EGETrainingMode::Peek, EGETrainingMode::Flick };
+	for (int32 i = 0; i < 4; ++i)
 	{
 		DrawButton(UGETrainingManager::ModeToString(Modes[i]), *FString::Printf(TEXT("Mode:%d"), (int32)Modes[i]), PX + 20.0f + i * (BW + Gap), Y, BW, BH, Manager.GetMode() == Modes[i]);
 	}
@@ -131,6 +132,64 @@ void AGEHUD::DrawTrainingMenu(UGETrainingManager& Manager)
 	DrawText(FString::Printf(TEXT("Accuracy: %.0f%% (%d/%d)     First-shot accuracy: %.0f%% (%d/%d)"), S.GetAccuracyPercent(), S.Hits, S.Shots, S.GetFirstShotAccuracyPercent(), S.FirstShotHits, S.FirstShots), FLinearColor::White, PX + 20.0f, Y, GEngine->GetSmallFont());
 	Y += 20.0f;
 	DrawText(FString::Printf(TEXT("Avg time to kill: %.2f s"), S.GetAverageTimeToKill()), FLinearColor::White, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 30.0f;
+
+	// Phase 4: mouse sensitivity (stored) and DPI.
+	DrawText(FString::Printf(TEXT("Sensitivity x%.2f  =  %.1f cm/360"), Manager.GetSensitivityScale(), Manager.GetCm360()), FLinearColor::Yellow, PX + 20.0f, Y + 5.0f, GEngine->GetSmallFont());
+	DrawButton(TEXT("-"), TEXT("SensDown"), PX + 330.0f, Y, 40.0f, 26.0f, false);
+	DrawButton(TEXT("+"), TEXT("SensUp"), PX + 376.0f, Y, 40.0f, 26.0f, false);
+	Y += 34.0f;
+	DrawText(FString::Printf(TEXT("Mouse DPI (assumed): %d"), Manager.GetMouseDpi()), FLinearColor::Yellow, PX + 20.0f, Y + 5.0f, GEngine->GetSmallFont());
+	DrawButton(TEXT("-100"), TEXT("DpiDown"), PX + 330.0f, Y, 40.0f, 26.0f, false);
+	DrawButton(TEXT("+100"), TEXT("DpiUp"), PX + 376.0f, Y, 40.0f, 26.0f, false);
+
+	// Phase 4: flick results panel beside the menu, shown after a flick session.
+	if (Manager.GetMode() == EGETrainingMode::Flick && !Manager.IsSessionRunning() && Manager.HasFlickSummary())
+	{
+		DrawFlickResults(Manager, FMath::Min(PX + PanelW + 10.0f, Canvas->ClipX - 440.0f), PY);
+	}
+}
+
+void AGEHUD::DrawFlickResults(UGETrainingManager& Manager, float X, float Y)
+{
+	const FGEFlickSummary& F = Manager.GetLastFlickSummary();
+	const float W = 430.0f;
+	DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.9f), X, Y, W, 400.0f);
+	DrawText(TEXT("FLICK RESULTS"), FLinearColor::White, X + 14.0f, Y + 10.0f, GEngine->GetMediumFont(), 1.2f);
+	float LY = Y + 40.0f;
+	DrawText(FString::Printf(TEXT("Targets %d   Hit %d (%.0f%%)   Avg time %.2f s"), F.TotalTargets, F.TotalHits, F.GetAccuracyPercent(), F.AverageTimeToHit), FLinearColor::White, X + 14.0f, LY, GEngine->GetSmallFont());
+	LY += 24.0f;
+
+	// Per-direction table
+	DrawText(TEXT("Direction"), FLinearColor::Yellow, X + 14.0f, LY, GEngine->GetSmallFont());
+	DrawText(TEXT("Hit/Tot"), FLinearColor::Yellow, X + 150.0f, LY, GEngine->GetSmallFont());
+	DrawText(TEXT("Acc"), FLinearColor::Yellow, X + 240.0f, LY, GEngine->GetSmallFont());
+	DrawText(TEXT("Avg time"), FLinearColor::Yellow, X + 320.0f, LY, GEngine->GetSmallFont());
+	LY += 20.0f;
+	for (int32 i = 0; i < F.Directions.Num(); ++i)
+	{
+		const FGEFlickDirStats& D = F.Directions[i];
+		const FLinearColor Col = D.Targets > 0 ? FLinearColor::White : FLinearColor(0.5f, 0.5f, 0.5f);
+		DrawText(GEFlickDirectionToString((EGEFlickDirection)i), Col, X + 14.0f, LY, GEngine->GetSmallFont());
+		DrawText(FString::Printf(TEXT("%d/%d"), D.Hits, D.Targets), Col, X + 150.0f, LY, GEngine->GetSmallFont());
+		DrawText(D.Targets > 0 ? FString::Printf(TEXT("%.0f%%"), D.GetAccuracyPercent()) : FString(TEXT("-")), Col, X + 240.0f, LY, GEngine->GetSmallFont());
+		DrawText(D.Hits > 0 ? FString::Printf(TEXT("%.2f s"), D.GetAverageTime()) : FString(TEXT("-")), Col, X + 320.0f, LY, GEngine->GetSmallFont());
+		LY += 19.0f;
+	}
+	LY += 8.0f;
+	DrawText(FString::Printf(TEXT("Avg overshoot: %+.1f%%  (%d flicks)   Corrections/flick: %.1f"), F.AverageOvershootPercent, F.OvershootSamples, F.AverageCorrections), FLinearColor::White, X + 14.0f, LY, GEngine->GetSmallFont());
+	LY += 22.0f;
+	if (F.bHasSuggestion)
+	{
+		DrawText(FString::Printf(TEXT("Suggestion: %s sensitivity by %.0f%%"), F.SuggestedChangePercent < 0.0f ? TEXT("lower") : TEXT("raise"), FMath::Abs(F.SuggestedChangePercent)), FLinearColor(0.4f, 1.0f, 0.5f), X + 14.0f, LY, GEngine->GetSmallFont());
+		LY += 20.0f;
+		DrawText(FString::Printf(TEXT("%.1f cm/360  ->  %.1f cm/360"), F.CurrentCm360, F.SuggestedCm360), FLinearColor(0.4f, 1.0f, 0.5f), X + 14.0f, LY, GEngine->GetSmallFont());
+		DrawButton(TEXT("Apply"), TEXT("ApplySens"), X + 320.0f, LY - 4.0f, 90.0f, 26.0f, false);
+	}
+	else
+	{
+		DrawText(TEXT("No consistent over/undershoot - keep your sensitivity."), FLinearColor(0.8f, 0.8f, 0.8f), X + 14.0f, LY, GEngine->GetSmallFont());
+	}
 }
 
 void AGEHUD::NotifyHitBoxClick(FName BoxName)
@@ -153,6 +212,11 @@ void AGEHUD::NotifyHitBoxClick(FName BoxName)
 	else if (Kind == TEXT("Diff")) { Manager->SetDifficulty((EGEDifficulty)Index); }
 	else if (Kind == TEXT("Wpn")) { Manager->SetWeaponIndex(Index); }
 	else if (Kind == TEXT("Toggle")) { Manager->IsSessionRunning() ? Manager->StopSession() : Manager->StartSession(); }
+	else if (Kind == TEXT("SensDown")) { Manager->SetSensitivityScale(Manager->GetSensitivityScale() / GESensitivity::ButtonStep); }
+	else if (Kind == TEXT("SensUp")) { Manager->SetSensitivityScale(Manager->GetSensitivityScale() * GESensitivity::ButtonStep); }
+	else if (Kind == TEXT("DpiDown")) { Manager->SetMouseDpi(Manager->GetMouseDpi() - GESensitivity::DpiStep); }
+	else if (Kind == TEXT("DpiUp")) { Manager->SetMouseDpi(Manager->GetMouseDpi() + GESensitivity::DpiStep); }
+	else if (Kind == TEXT("ApplySens")) { Manager->ApplyFlickSuggestion(); }
 	else if (Kind == TEXT("Close")) { Manager->ToggleMenu(); }
 }
 

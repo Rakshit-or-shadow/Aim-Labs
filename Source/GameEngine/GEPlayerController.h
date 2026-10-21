@@ -7,10 +7,10 @@
 /**
  * Base C++ player controller.
  *
- * Minimal on purpose: BP_FirstPersonPlayerController already adds the input
- * mapping contexts (IMC_Default, IMC_MouseLook), sets the camera manager and
- * creates the touch-controls widget in its graph. This class is the place for
- * future controller-level C++ (e.g. pause, fire requests) without touching that.
+ * BP_FirstPersonPlayerController adds the input mapping contexts and camera manager.
+ * Phase 4: look input goes through AddYawInput / AddPitchInput (the Blueprint's
+ * "Add Controller Yaw/Pitch Input" nodes end up here), so we scale it by the stored
+ * mouse sensitivity (UGETrainingManager::GetSensitivityScale).
  */
 UCLASS(Blueprintable)
 class GAMEENGINE_API AGEPlayerController : public APlayerController
@@ -19,4 +19,10 @@ class GAMEENGINE_API AGEPlayerController : public APlayerController
 
 public:
 	AGEPlayerController();
+
+	virtual void AddYawInput(float Val) override;
+	virtual void AddPitchInput(float Val) override;
+
+private:
+	float GetSensitivityScale() const;
 };

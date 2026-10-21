@@ -65,6 +65,8 @@ private:
 	void DrawTrainingOverlay();
 	void DrawTrainingMenu(class UGETrainingManager& Manager);
 	void DrawPopups(class UGETrainingManager& Manager);
+	/** Phase 4: per-direction table, overshoot and sensitivity suggestion. */
+	void DrawFlickResults(class UGETrainingManager& Manager, float X, float Y);
 	/** Draws a clickable button and registers its hit box. */
 	void DrawButton(const FString& Label, const FName& Name, float X, float Y, float W, float H, bool bSelected);
 
