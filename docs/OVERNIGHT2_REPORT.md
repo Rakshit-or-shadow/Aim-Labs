@@ -75,3 +75,20 @@ Put files here (all optional, original art only):
 - Build: n/a
 - Commit: 4265c93 (report commit follows)
 - Manual steps: eyeball the estimated hexes against 03_foundations.png; add the optional art.
+
+## Stage B2: Fonts and style system
+
+- Status: DONE (built; fonts/theme not visually verified, nullrhi draws nothing)
+- Summary:
+  - Downloaded Rajdhani (Medium/SemiBold/Bold) and Share Tech Mono TTFs + OFL texts from google/fonts (valid TTF headers) into ArtSource/Fonts, imported headless as FontFace assets in Content/UI/Fonts (FF_*). No standalone PNGs exist under FigmaUI/backgrounds or icons, so no textures were imported (script handles them with no mips / TC_EDITOR_ICON / UI group).
+  - GEStyle.h extended: all kit color tokens x 4 themes (EGETheme, GEStyle::Active()), type scale, 4px spacing, strokes, Scaled(). Fonts are runtime UFonts built from the FontFace assets (AGEHUD::EnsureFonts, logs "GE UI fonts: ..."), fallback Roboto/DroidSansMono; GetSizedFont crisp trick kept.
+  - UGESaveGame::UITheme (default 0 = Red, old saves load fine); Settings screen has a fifth cycle row "UI theme", applied live. HUD chrome accent and body text use the active theme.
+- Build result: Succeeded (first attempt)
+- Commit: 1bb8bb4 (report commit follows)
+- Manual steps: play and check the log for "GE UI fonts: UI = Rajdhani SemiBold (imported)"; open Settings and cycle UI theme; eyeball the text sizes (Rajdhani is narrower than Roboto). Only the Settings/Pause/Main Menu accents follow the theme so far; mode colors, gold and green accents are unchanged (B3 should migrate them).
+- Decisions:
+  - The prescribed -run=pythonscript command crashed on the font import (Slate not initialised in commandlet mode: CurrentApplication.IsValid). The same Tools/import_ui.py works via `UnrealEditor-Cmd.exe <uproject> -ExecutePythonScript=<script> -unattended -nosplash -nullrhi`; used that.
+  - Enabled PythonScriptPlugin and EditorScriptingUtilities (Editor target only).
+  - Rajdhani SemiBold is the single UI font in the HUD; Medium and Bold are imported and have paths in GEStyle but are not used yet. Display XL = 84 per task (the spec table said 64).
+  - Canvas colors are used as raw sRGB hex/255, no gamma conversion, to match the kit swatches.
+  - Fonts and OFL texts under ArtSource/Fonts were committed (they are needed to re-import); ArtSource/FigmaUI stays untracked.
