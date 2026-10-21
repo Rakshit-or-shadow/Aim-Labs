@@ -8,7 +8,7 @@
 //     Manager->StartMode(EGEAimMode::Gridshot);   // teleport to arena, freeze movement, 3-2-1-GO
 //     Manager->StopMode();                        // leave: restores position and movement
 // Console (for testing):  ge.aim.start <0-3 or mode name>   and   ge.aim.stop
-// Keys while a mode is active: Tab = leave, R = restart the same mode.
+// Keys (Tab, R, Enter...) are handled by AGEHUD, which owns the menu flow.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -68,6 +68,17 @@ public:
 
 	/** Leaves the arena: ends the round without a score, restores position, aim and movement. */
 	void StopMode();
+
+	/**
+	 * Menu showcase: puts the player on the pad (if not there already), ends any round and shows the
+	 * floating idle targets. While in this state the view drifts slowly (menu camera drift).
+	 * Returns false if the player cannot enter the arena (no player, or in the Training Center).
+	 */
+	bool ShowShowcase(ACharacter* Who = nullptr);
+
+	/** Pause menu: freezes the round (timers, targets, clicks) without ending it. */
+	void SetPaused(bool bPause) { bPaused = bPause; }
+	bool IsPaused() const { return bPaused; }
 
 	/** True from StartMode until StopMode (countdown, playing and the results moment). */
 	bool IsModeActive() const { return bInArena; }
@@ -132,6 +143,7 @@ private:
 
 	// where to put the player back
 	bool bInArena = false;
+	bool bPaused = false;
 	FVector SavedLocation = FVector::ZeroVector;
 	FRotator SavedControlRotation = FRotator::ZeroRotator;
 
@@ -188,4 +200,6 @@ private:
 	UGESaveGame* GetSave() const;
 	bool GetAimRay(FVector& OutOrigin, FVector& OutDirection) const;
 	void FreezePlayer(bool bFreeze);
+	/** Moves the player onto the arena pad (first call only). Returns false if it cannot. */
+	bool EnterArena(ACharacter* Who);
 };

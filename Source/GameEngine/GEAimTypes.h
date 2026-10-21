@@ -16,14 +16,19 @@ enum class EGEAimMode : uint8
 	Reflex      // 1 target appears after a random delay, click it fast
 };
 
-/** Which aim-trainer screen the player is looking at (used by the menus in a later stage). */
+/** Which screen the player is looking at. AGEHUD draws it and handles its input. */
 UENUM(BlueprintType)
 enum class EGEScreen : uint8
 {
-	MainMenu,
-	Settings,
-	Playing,
-	Results
+	MainMenu,        // title + Aim Trainer / Training Center / Flick Optimizer / Free Roam / Settings / Quit
+	ModeSelect,      // pick one of the 4 aim modes (shows personal bests)
+	Settings,        // sensitivity, FOV, volume, crosshair color
+	Playing,         // an aim round is running (countdown, timer, score...)
+	Results,         // end-of-round summary (aim modes, Training Center, Flick Optimizer)
+	Pause,           // Tab while playing: Resume / Restart / Settings / Main Menu
+	FreeRoam,        // normal movement with the weapons (T = Training Center, M = its menu)
+	TrainingCenter,  // inside the Training Center with its menu
+	FlickOptimizer   // Training Center set to the flick mode
 };
 
 /** One row of stats, e.g. Label = "Accuracy", Value = "93.5%". */

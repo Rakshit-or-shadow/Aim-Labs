@@ -65,57 +65,67 @@ void AGETargetManager::BeginPlay()
 //                    ENTERING / LEAVING THE ARENA
 // =====================================================================
 
+bool AGETargetManager::EnterArena(ACharacter* InPlayer)
+{
+	if (bInArena)
+	{
+		return true; // already on the pad
+	}
+
+	// who is playing?
+	ACharacter* Who = InPlayer ? InPlayer : Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (Who == nullptr)
+	{
+		return false;
+	}
+	// do not mix with the Training Center (it has its own teleport)
+	const UGETrainingManager* Training = UGETrainingManager::Get(this);
+	if (Training && Training->IsInTrainingCenter())
+	{
+		return false;
+	}
+
+	Player = Who;
+	PlayerCamera = Who->FindComponentByClass<UCameraComponent>();
+	PlayerWeapons = Who->FindComponentByClass<UGEWeaponComponent>();
+
+	// remember where to come back to
+	APlayerController* PC = Cast<APlayerController>(Who->GetController());
+	SavedLocation = Who->GetActorLocation();
+	SavedControlRotation = PC ? PC->GetControlRotation() : Who->GetActorRotation();
+
+	// stand on the pink pad (floor top is 2 cm above the arena origin)
+	Who->UnCrouch();
+	const float HalfHeight = Who->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector Pad = Arena->GetActorLocation() + FVector(0.0, 0.0, 2.0 + HalfHeight + 2.0);
+	Who->TeleportTo(Pad, FRotator::ZeroRotator, false, true);
+	FreezePlayer(true);
+
+	// shooting is handled by us (first-shot ray, no ammo, no spread, no recoil)
+	if (PlayerWeapons)
+	{
+		PlayerWeapons->SetFiringEnabled(false);
+	}
+
+	Arena->SetAimLookEnabled(true);
+	bInArena = true;
+
+	// center the target area at the player's eye height, TargetDistance in front of the pad
+	const double EyeZ = PlayerCamera ? PlayerCamera->GetComponentLocation().Z : Pad.Z + 60.0;
+	const FVector ArenaOrigin = Arena->GetActorLocation();
+	SetActorLocation(FVector(ArenaOrigin.X + TargetDistance, ArenaOrigin.Y, EyeZ));
+	return true;
+}
+
 bool AGETargetManager::StartMode(EGEAimMode NewMode, ACharacter* InPlayer)
 {
 	if (Arena == nullptr || Targets.Num() < 3)
 	{
 		return false;
 	}
-
-	if (!bInArena)
+	if (!EnterArena(InPlayer))
 	{
-		// who is playing?
-		ACharacter* Who = InPlayer ? InPlayer : Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
-		if (Who == nullptr)
-		{
-			return false;
-		}
-		// do not mix with the Training Center (it has its own teleport)
-		const UGETrainingManager* Training = UGETrainingManager::Get(this);
-		if (Training && Training->IsInTrainingCenter())
-		{
-			return false;
-		}
-
-		Player = Who;
-		PlayerCamera = Who->FindComponentByClass<UCameraComponent>();
-		PlayerWeapons = Who->FindComponentByClass<UGEWeaponComponent>();
-
-		// remember where to come back to
-		APlayerController* PC = Cast<APlayerController>(Who->GetController());
-		SavedLocation = Who->GetActorLocation();
-		SavedControlRotation = PC ? PC->GetControlRotation() : Who->GetActorRotation();
-
-		// stand on the pink pad (floor top is 2 cm above the arena origin)
-		Who->UnCrouch();
-		const float HalfHeight = Who->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-		const FVector Pad = Arena->GetActorLocation() + FVector(0.0, 0.0, 2.0 + HalfHeight + 2.0);
-		Who->TeleportTo(Pad, FRotator::ZeroRotator, false, true);
-		FreezePlayer(true);
-
-		// shooting is handled by us (first-shot ray, no ammo, no spread, no recoil)
-		if (PlayerWeapons)
-		{
-			PlayerWeapons->SetFiringEnabled(false);
-		}
-
-		Arena->SetAimLookEnabled(true);
-		bInArena = true;
-
-		// center the target area at the player's eye height, TargetDistance in front of the pad
-		const double EyeZ = PlayerCamera ? PlayerCamera->GetComponentLocation().Z : Pad.Z + 60.0;
-		const FVector ArenaOrigin = Arena->GetActorLocation();
-		SetActorLocation(FVector(ArenaOrigin.X + TargetDistance, ArenaOrigin.Y, EyeZ));
+		return false;
 	}
 
 	// aim straight ahead (+X) at the start of every round
@@ -132,6 +142,22 @@ bool AGETargetManager::StartMode(EGEAimMode NewMode, ACharacter* InPlayer)
 	return true;
 }
 
+bool AGETargetManager::ShowShowcase(ACharacter* InPlayer)
+{
+	if (Arena == nullptr || Targets.Num() < 3)
+	{
+		return false;
+	}
+	if (!EnterArena(InPlayer))
+	{
+		return false;
+	}
+	bPaused = false;
+	bRoundFinished = false;
+	StopRound(); // hides nothing, shows the floating idle targets
+	return true;
+}
+
 void AGETargetManager::StopMode()
 {
 	if (!bInArena)
@@ -141,6 +167,7 @@ void AGETargetManager::StopMode()
 
 	StopRound();
 	bInArena = false;
+	bPaused = false;
 	bRoundFinished = false;
 
 	if (Arena)
@@ -228,6 +255,7 @@ void AGETargetManager::StartRound(EGEAimMode NewMode)
 
 	// reset everything
 	Mode = NewMode;
+	bPaused = false;
 	bRunning = true;
 	bRoundFinished = false;
 	bNewBest = false;
@@ -381,22 +409,19 @@ void AGETargetManager::Tick(float DeltaTime)
 		return;
 	}
 
-	// keys while in the arena: Tab = leave, R = restart this mode
-	if (Player)
+	// menu camera drift: while only the showcase is visible, the view sways slowly
+	if (!bRunning && !bRoundFinished && Player)
 	{
-		if (const APlayerController* PC = Cast<APlayerController>(Player->GetController()))
+		if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
 		{
-			if (PC->WasInputKeyJustPressed(EKeys::Tab))
-			{
-				StopMode();
-				return;
-			}
-			if (PC->WasInputKeyJustPressed(EKeys::R))
-			{
-				StartMode(Mode);
-				return;
-			}
+			PC->SetControlRotation(FRotator(FMath::Sin(CurrentTime * 0.35f) * 1.5f, FMath::Sin(CurrentTime * 0.22f) * 3.0f, 0.0f));
 		}
+	}
+
+	// pause menu: nothing moves, no timer runs
+	if (bPaused)
+	{
+		return;
 	}
 
 	if (!bRunning)
@@ -572,7 +597,7 @@ void AGETargetManager::UpdateAim(const FVector& Origin, const FVector& Direction
 
 void AGETargetManager::HandleClick(const FVector& Origin, const FVector& Direction)
 {
-	if (!bRunning || bCountingDown || Mode == EGEAimMode::Tracking)
+	if (!bRunning || bPaused || bCountingDown || Mode == EGEAimMode::Tracking)
 	{
 		return; // no shooting during the countdown, and Tracking doesn't use clicks
 	}

@@ -7,6 +7,10 @@
 #include "GEFlickTypes.h"
 #include "GECoachTypes.h"
 #include "GameFramework/PlayerController.h"
+#include "GESaveGame.h"
+#include "GEStyle.h"
+#include "Engine/Font.h"
+#include "UObject/ConstructorHelpers.h"
 
 // ---------------------------------------------------------------------------
 // Phase 3: Training Center overlay, popups and clickable menu (key M).
@@ -42,8 +46,8 @@ void AGEHUD::DrawPopups(UGETrainingManager& Manager)
 		const float Age = Now - P.SpawnTime;
 		const float Alpha = 1.0f - Age / Manager.GetPopupDuration();
 		// Text floats upward while it fades out.
-		const FVector Screen = Project(P.WorldLocation + FVector(0, 0, Age * 60.0f));
-		if (Screen.Z <= 0.0f)
+		const FVector ScreenPos = Project(P.WorldLocation + FVector(0, 0, Age * 60.0f));
+		if (ScreenPos.Z <= 0.0f)
 		{
 			continue; // behind the camera
 		}
@@ -51,7 +55,7 @@ void AGEHUD::DrawPopups(UGETrainingManager& Manager)
 		GetTextSize(P.Text, W, H, GEngine->GetMediumFont(), 1.4f);
 		FLinearColor Col = P.Color;
 		Col.A = FMath::Clamp(Alpha, 0.0f, 1.0f);
-		DrawText(P.Text, Col, Screen.X - W * 0.5f, Screen.Y - H, GEngine->GetMediumFont(), 1.4f);
+		DrawText(P.Text, Col, ScreenPos.X - W * 0.5f, ScreenPos.Y - H, GEngine->GetMediumFont(), 1.4f);
 	}
 }
 
@@ -283,6 +287,16 @@ void AGEHUD::NotifyHitBoxClick(FName BoxName)
 	else if (Kind == TEXT("Close")) { Manager->ToggleMenu(); }
 }
 
+AGEHUD::AGEHUD()
+{
+	// Monospace font for numbers (timer, scores).
+	static ConstructorHelpers::FObjectFinder<UFont> Mono(TEXT("/Engine/EngineFonts/DroidSansMono.DroidSansMono"));
+	if (Mono.Succeeded())
+	{
+		MonoFont = Mono.Object;
+	}
+}
+
 void AGEHUD::DrawHUD()
 {
 	Super::DrawHUD();
@@ -292,41 +306,90 @@ void AGEHUD::DrawHUD()
 		return;
 	}
 
+	// Everything in the menus is designed for 1080p and scaled to the real screen size.
+	UIScale = Canvas->ClipY / 1080.0f;
+	FrameDeltaTime = GetWorld()->GetDeltaSeconds();
+	NowTime = GetWorld()->GetTimeSeconds();
+
+	// Where is the mouse, and did it move this frame?
+	bHasMouse = PlayerOwner && PlayerOwner->GetMousePosition(MouseX, MouseY);
+	bMouseMoved = bHasMouse && (FMath::Abs(MouseX - LastMouseX) > 0.5f || FMath::Abs(MouseY - LastMouseY) > 0.5f);
+
+	// A new screen appeared: restart its intro animation.
+	if (Screen != LastDrawnScreen)
+	{
+		LastDrawnScreen = Screen;
+		ScreenStartTime = NowTime;
+		ButtonAnim.Empty();
+	}
+
+	// Reset; DrawMenuButton sets it again if the mouse is over a button.
+	HoveredItem = -1;
+
+	if (!bFlowActive)
+	{
+		// A level without the aim arena: just the normal gameplay HUD.
+		DrawGameplayHUD();
+	}
+	else
+	{
+		switch (Screen)
+		{
+		case EGEScreen::MainMenu:   DrawMainMenu();   break;
+		case EGEScreen::ModeSelect: DrawModeSelect(); break;
+		case EGEScreen::Settings:   DrawSettings();   break;
+		case EGEScreen::Results:    DrawResults();    break;
+		case EGEScreen::Playing:    DrawPlaying();    break;
+		case EGEScreen::Pause:
+			if (PauseReturn == EGEScreen::Playing)
+			{
+				DrawPlaying(); // the frozen round stays visible behind the pause card
+			}
+			DrawPause();
+			break;
+		default:                    DrawGameplayHUD(); break; // FreeRoam, TrainingCenter, FlickOptimizer
+		}
+	}
+
+	if (bHasMouse)
+	{
+		LastMouseX = MouseX;
+		LastMouseY = MouseY;
+	}
+}
+
+void AGEHUD::DrawGameplayHUD()
+{
 	// Screen center.
 	const float CenterX = Canvas->ClipX * 0.5f;
 	const float CenterY = Canvas->ClipY * 0.5f;
 
-	const float Size = Crosshair.Size;
-	const float Thick = Crosshair.Thickness;
 	// Phase 2: the gap widens with the weapon's current spread.
 	const AGECharacter* GECharacter = Cast<AGECharacter>(GetOwningPawn());
 	const UGEWeaponComponent* Weapon = GECharacter ? GECharacter->GetWeaponComponent() : nullptr;
-	float Gap = Crosshair.Gap;
+	float ExtraGap = 0.0f;
 	if (Weapon)
 	{
 		// Convert the spread angle into screen pixels using the current FOV.
 		const float HalfFov = FMath::DegreesToRadians(FMath::Max(Weapon->GetCurrentFov(), 1.0f) * 0.5f);
-		const float SpreadPx = FMath::Tan(FMath::DegreesToRadians(Weapon->GetCurrentSpreadDeg())) / FMath::Tan(HalfFov) * CenterX;
-		Gap += SpreadPx;
+		ExtraGap = FMath::Tan(FMath::DegreesToRadians(Weapon->GetCurrentSpreadDeg())) / FMath::Tan(HalfFov) * CenterX;
 	}
 	const bool bScoped = Weapon && Weapon->IsScoped();
-	const float HalfThick = Thick * 0.5f;
 
-	// Each line is a thin rectangle. (X, Y) is the rectangle's top-left corner.
+	// Crosshair color comes from the Settings screen (saved). Falls back to the class default.
+	FLinearColor CrosshairColor = Crosshair.Color;
+	if (const UGESaveGame* Save = GetSave())
+	{
+		CrosshairColor = GEStyle::GetCrosshairColor(Save->CrosshairColor);
+	}
+
 	if (bScoped)
 	{
 		DrawScope(CenterX, CenterY);
 	}
 	else
 	{
-	// Left line
-	DrawOutlinedRect(CenterX - Gap - Size, CenterY - HalfThick, Size, Thick);
-	// Right line
-	DrawOutlinedRect(CenterX + Gap, CenterY - HalfThick, Size, Thick);
-	// Top line
-	DrawOutlinedRect(CenterX - HalfThick, CenterY - Gap - Size, Thick, Size);
-	// Bottom line
-	DrawOutlinedRect(CenterX - HalfThick, CenterY + Gap, Thick, Size);
+		DrawCrosshairAt(CenterX, CenterY, CrosshairColor, ExtraGap);
 	}
 
 	if (Weapon)
@@ -348,16 +411,31 @@ void AGEHUD::DrawHUD()
 	}
 }
 
-void AGEHUD::DrawOutlinedRect(float X, float Y, float W, float H)
+void AGEHUD::DrawCrosshairAt(float CX, float CY, const FLinearColor& Color, float ExtraGap)
 {
+	const float Gap = Crosshair.Gap + ExtraGap;
+	const float Len = Crosshair.Size;
 	const float O = Crosshair.OutlineThickness;
 
-	// Draw the outline first (a slightly bigger rectangle) so the colored line sits on top.
-	if (O > 0.0f)
+	// Draw everything twice: a thick dark outline first, then the colored lines on top.
+	for (int32 Pass = 0; Pass < 2; ++Pass)
 	{
-		DrawRect(Crosshair.OutlineColor, X - O, Y - O, W + 2.0f * O, H + 2.0f * O);
+		const bool bOutline = (Pass == 0);
+		if (bOutline && O <= 0.0f)
+		{
+			continue;
+		}
+		const FLinearColor C = bOutline ? Crosshair.OutlineColor : Color;
+		const float Thick = Crosshair.Thickness + (bOutline ? 2.0f * O : 0.0f);
+
+		DrawLine(CX - Gap - Len, CY, CX - Gap, CY, C, Thick);
+		DrawLine(CX + Gap, CY, CX + Gap + Len, CY, C, Thick);
+		DrawLine(CX, CY - Gap - Len, CX, CY - Gap, C, Thick);
+		DrawLine(CX, CY + Gap, CX, CY + Gap + Len, C, Thick);
+
+		const float Dot = bOutline ? 4.0f : 2.0f; // center dot
+		DrawRect(C, CX - Dot * 0.5f, CY - Dot * 0.5f, Dot, Dot);
 	}
-	DrawRect(Crosshair.Color, X, Y, W, H);
 }
 
 void AGEHUD::DrawWeaponInfo(const UGEWeaponComponent& Weapon)

@@ -96,6 +96,9 @@ public:
 	 */
 	bool TryAimTrainerShot(FVector& OutOrigin, FVector& OutDirection);
 
+	/** Sets the normal (not zoomed) field of view. The settings screen calls this. */
+	void SetBaseFov(float NewFov) { BaseFov = NewFov; }
+
 	/** Lets menus turn shooting off. */
 	UFUNCTION(BlueprintCallable, Category = "GE|Weapon")
 	void SetFiringEnabled(bool bEnabled);

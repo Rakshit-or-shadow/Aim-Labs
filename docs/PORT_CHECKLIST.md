@@ -13,20 +13,20 @@ Existing in GameEngine now (do not duplicate): `AGEGameMode`, `AGEHUD` (outlined
 
 - [x] `ERayShotMode` {Gridshot, Microshot, Tracking, Reflex} -> `EGEAimMode` (new, in `GEAimTypes.h`) (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `ERayShotScreen` {MainMenu, Settings, Playing, Results} -> `EGEScreen` (new, `GEAimTypes.h`) (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
-- [ ] `ARayShotGameMode` (screens, menu selection, rounds, bests, input mode) -> extend `AGEGameMode` (or a helper `UGEAimTrainerState`); do not make a second game mode
+- [x] `ARayShotGameMode` (screens, menu selection, rounds, bests, input mode) -> extend `AGEGameMode` (or a helper `UGEAimTrainerState`); do not make a second game mode (A3: flow decided in AGEHUD (GEHUDScreens.cpp) + AGETargetManager (StartMode/ShowShowcase/SetPaused); AGEGameMode only spawns arena/manager and sets AGEHUD as HUDClass. No second game mode; BP_FirstPersonGameMode still works)
 - [x] `ATargetManager` -> `AGETargetManager` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `ATargetSphere` -> `AGETargetSphere` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `AArena` -> `AGEArena` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `AHitBurst` -> `AGEHitBurst` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
-- [ ] `ARayShotHUD` -> extend the single `AGEHUD` (menus, results, HUD, popups); no second HUD class
-- [ ] `ARayShotPawn` (camera-only pawn, mouse look, menu input) -> input handling goes in `AGEPlayerController`/`AGECharacter`; a fixed-spot aim pawn mode is optional (decide at port time, log it)
+- [x] `ARayShotHUD` -> extend the single `AGEHUD` (menus, results, HUD, popups); no second HUD class (A3: GEHUD.h, GEHUD.cpp, GEHUDScreens.cpp (single AGEHUD))
+- [x] `ARayShotPawn` (camera-only pawn, mouse look, menu input) -> input handling goes in `AGEPlayerController`/`AGECharacter`; a fixed-spot aim pawn mode is optional (decide at port time, log it) (A3: no separate pawn. Decision: the GE character stands frozen on the arena pad (AGETargetManager::EnterArena); menu keys polled in AGEHUD::HandleKeys, look/move blocked by AGEHUD::ApplyInputState)
 - [x] `URayShotSaveGame` -> fields merged into `UGESaveGame` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `RayShotStyle` namespace (colors, paths, crosshair palette) -> `GEStyle.h` namespace `GEStyle` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `RayShotModes` helper namespace -> `GEAimModes.h` namespace `GEAimModes` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [x] `RayShotSounds` (procedural tones) -> `GESounds.h` namespace `GESounds` (check if Phase 2 weapon sounds already have a tone helper; reuse it) (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
-- [ ] `RayTraceMath.h` -> already in GameEngine (unchanged)
+- [x] `RayTraceMath.h` -> already in GameEngine (unchanged) (unchanged: Source/GameEngine/RayTraceMath.h, still used by AGETargetManager hit test)
 - [x] `FStatLine`, `FScorePopup` structs -> `FGEStatLine`, `FGEScorePopup` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
-- [ ] `RayShot.Build.cs` modules: Core, CoreUObject, Engine, InputCore -> confirm `GameEngine.Build.cs` has them (also needs nothing extra for Canvas/HUD)
+- [x] `RayShot.Build.cs` modules: Core, CoreUObject, Engine, InputCore -> confirm `GameEngine.Build.cs` has them (also needs nothing extra for Canvas/HUD) (A3: GameEngine.Build.cs already has Core, CoreUObject, Engine, InputCore (+EnhancedInput, UMG, Slate); Canvas HUD needs nothing more)
 
 ## 1. Colors and style (RayShotStyle.h) -> GEStyle
 
@@ -100,63 +100,63 @@ Formatting (GEAimModes)
 
 ## 3. Flow, countdown and screens (GameMode)
 
-- [ ] Start: load save, spawn arena once, spawn/find manager, Screen = MainMenu, SelectedItem 0, input mode for menus
-- [ ] Screens: MainMenu, Settings, Playing, Results (EGEScreen). Existing Training Center/menu (M) from earlier phases must keep working; the aim trainer is reachable from it or the new main menu (decide and log; do not break Lvl_IntroRoom)
-- [ ] Menu items: MainMenu = 4 modes + Settings + Quit (6); Settings = 4 settings + Back (5); Results = 2 (Play Again, Main Menu); selection wraps; move plays click sound
-- [ ] ActivateSelected: mode index -> StartMode; Settings -> settings screen (selection 0); Quit -> QuitGame; in Settings a setting row = increase, Back row = Back; Results: 0 = StartMode(CurrentMode), 1 = GoToMainMenu
-- [ ] ChangeSetting(dir): Results screen -> just moves selection; Settings -> apply, save immediately, click sound
-- [ ] Back (Tab AND Esc): Playing/Results -> main menu (StopRound when from playing); Settings -> save, back to MainMenu with "Settings" item highlighted; MainMenu -> nothing. NOTE: Esc stops PIE, so Tab is the documented key
-- [ ] StartMode: CurrentMode, bNewBest=false, Screen=Playing, reset aim to straight ahead (yaw 0, pitch 0), manager StartRound, hide cursor/game-only input, click sound
-- [ ] R during play = restart same mode; R on Results = Play Again
-- [ ] 3-2-1-GO countdown: CountdownLength 3 s; beep (700 Hz, 0.09 s) once per number when ceil(CountdownLeft) changes (3, 2, 1); at <= 0 -> GO sound (round start) and timers begin
-- [ ] Countdown HUD: "GET READY" (TextDim a0.9, size 24) at CenterY-250; number size 150*(1+0.35*frac^4) where frac = Left - floor(Left), alpha = clamp(frac*4,0,1), mono font, glow label in mode color, drawn at CenterY-150 minus half text height
-- [ ] "GO!" for 0.6 s after countdown: alpha = 1 - t/0.6, size 130*(1+0.4*t), white text with Green glow
-- [ ] OnRoundFinished: LastScore; new best if no previous best, or (LowerIsBetter ? score < best : score > best); save immediately; Screen=Results; sound NewBest vs RoundEnd
-- [ ] Input mode: Playing = game-only, cursor hidden; menus = GameAndUI, cursor shown, no mouse lock, no hide during capture
+- [x] Start: load save, spawn arena once, spawn/find manager, Screen = MainMenu, SelectedItem 0, input mode for menus (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] Screens: MainMenu, Settings, Playing, Results (EGEScreen). Existing Training Center/menu (M) from earlier phases must keep working; the aim trainer is reachable from it or the new main menu (decide and log; do not break Lvl_IntroRoom) (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] Menu items: MainMenu = 4 modes + Settings + Quit (6); Settings = 4 settings + Back (5); Results = 2 (Play Again, Main Menu); selection wraps; move plays click sound (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] ActivateSelected: mode index -> StartMode; Settings -> settings screen (selection 0); Quit -> QuitGame; in Settings a setting row = increase, Back row = Back; Results: 0 = StartMode(CurrentMode), 1 = GoToMainMenu (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] ChangeSetting(dir): Results screen -> just moves selection; Settings -> apply, save immediately, click sound (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] Back (Tab AND Esc): Playing/Results -> main menu (StopRound when from playing); Settings -> save, back to MainMenu with "Settings" item highlighted; MainMenu -> nothing. NOTE: Esc stops PIE, so Tab is the documented key (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] StartMode: CurrentMode, bNewBest=false, Screen=Playing, reset aim to straight ahead (yaw 0, pitch 0), manager StartRound, hide cursor/game-only input, click sound (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] R during play = restart same mode; R on Results = Play Again (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] 3-2-1-GO countdown: CountdownLength 3 s; beep (700 Hz, 0.09 s) once per number when ceil(CountdownLeft) changes (3, 2, 1); at <= 0 -> GO sound (round start) and timers begin (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] Countdown HUD: "GET READY" (TextDim a0.9, size 24) at CenterY-250; number size 150*(1+0.35*frac^4) where frac = Left - floor(Left), alpha = clamp(frac*4,0,1), mono font, glow label in mode color, drawn at CenterY-150 minus half text height (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] "GO!" for 0.6 s after countdown: alpha = 1 - t/0.6, size 130*(1+0.4*t), white text with Green glow (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] OnRoundFinished: LastScore; new best if no previous best, or (LowerIsBetter ? score < best : score > best); save immediately; Screen=Results; sound NewBest vs RoundEnd (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
+- [x] Input mode: Playing = game-only, cursor hidden; menus = GameAndUI, cursor shown, no mouse lock, no hide during capture (A3: GEHUDScreens.cpp (StartFlow, SetScreen, ApplyInputState, ActivateSelected, GoBack, HandleKeys, DrawCountdown) + GETargetManager.cpp (countdown, OnRoundFinished/saves best))
 
 ## 4. Menus and HUD (RayShotHUD.cpp) -> AGEHUD
 
 General
-- [ ] Layout designed at 1080p; UIScale = Canvas->ClipY/1080; `Px()` helper
-- [ ] Intro ease-out cubic `1-(1-t)^3` on each screen; ScreenAge resets when screen changes (clear button animation array)
-- [ ] Pointer: hover over a button sets HoveredItem and selects it only when the mouse actually moved (>0.5 px); LMB activates hovered; RMB lowers a hovered setting
-- [ ] Buttons: fill lerp ButtonFill -> accent*0.22 (a0.9) by smooth Anim (FInterpTo speed 14); left accent bar width 3px + 5px*Anim; outline (top, bottom, right) when selected alpha 0.45*Anim; label size 24 (x offset 26px + 8px*Anim), right text mono size 20, gold if it starts with "BEST" else dim
-- [ ] Slider: track 4px high (white a0.1), fill accent, 10x14 white knob
-- [ ] Panel: PanelFill + 1px PanelBorder; gradient helper (48 strips)
-- [ ] Crisp text: `GetSizedFont` duplicates the font with `LegacyFontSize` = bucketed size (step 4 above 48px, else 1; clamp 4..1000), cached per size and mono flag, draw at scale TargetSize/Bucket. Fonts: large engine font, mono = `/Engine/EngineFonts/DroidSansMono`. Pixel-snap text positions. Drop shadow (black a0.55 offset 2px). Glow label = text drawn 8 times at ring radii 2px and 4px with glow color alpha 0.09
-- [ ] MeasureText and DrawLabel(AlignX 0/0.5/1, mono, shadow flags)
+- [x] Layout designed at 1080p; UIScale = Canvas->ClipY/1080; `Px()` helper (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] Intro ease-out cubic `1-(1-t)^3` on each screen; ScreenAge resets when screen changes (clear button animation array) (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] Pointer: hover over a button sets HoveredItem and selects it only when the mouse actually moved (>0.5 px); LMB activates hovered; RMB lowers a hovered setting (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] Buttons: fill lerp ButtonFill -> accent*0.22 (a0.9) by smooth Anim (FInterpTo speed 14); left accent bar width 3px + 5px*Anim; outline (top, bottom, right) when selected alpha 0.45*Anim; label size 24 (x offset 26px + 8px*Anim), right text mono size 20, gold if it starts with "BEST" else dim (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] Slider: track 4px high (white a0.1), fill accent, 10x14 white knob (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] Panel: PanelFill + 1px PanelBorder; gradient helper (48 strips) (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] Crisp text: `GetSizedFont` duplicates the font with `LegacyFontSize` = bucketed size (step 4 above 48px, else 1; clamp 4..1000), cached per size and mono flag, draw at scale TargetSize/Bucket. Fonts: large engine font, mono = `/Engine/EngineFonts/DroidSansMono`. Pixel-snap text positions. Drop shadow (black a0.55 offset 2px). Glow label = text drawn 8 times at ring radii 2px and 4px with glow color alpha 0.09 (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
+- [x] MeasureText and DrawLabel(AlignX 0/0.5/1, mono, shadow flags) (A3: GEHUDScreens.cpp (Px/UIScale, EaseOut, DrawMenuButton, DrawSlider, DrawPanel, DrawGradient, GetSizedFont, DrawLabel, DrawGlowLabel, MeasureText))
 
 Main menu
-- [ ] Background gradient horizontal (0.008, 0.01, 0.02) alpha 0.93 -> 0.3 (dark left, see-through right) over live 3D scene
-- [ ] Title "RAYSHOT" size 120 glow Cyan at x=120px (slides in 30px), underline bar cyan 90px x 5px at y 262, subtitle "AIM TRAINER   //   HIT DETECTION BY MY OWN RAY TRACER" size 19. (GE: keep or rename title, log decision)
-- [ ] Buttons 600x62, gap 12, start y 360, extra 18px gap before Settings; stagger intro 0.05 s per button; mode buttons show "BEST <score>" gold or "NEW"; SETTINGS (dim), QUIT (red)
-- [ ] Info card (right, 520 wide at x = ClipX-120-520, y 360): for mode: h 420, top color bar, mode name size 46 glow, 3 description lines (last line in mode color) size 22 spacing 34 from +112, divider at +240, DURATION and PERSONAL BEST (gold mono, or "not played yet") at +266/+292, pulsing "PRESS ENTER OR CLICK TO PLAY" (alpha 0.6+0.4*sin(4t)); for Settings/Quit: h 200 card with blurb
-- [ ] Footer hints "W / S  or mouse to choose      ENTER / click to select" and version label bottom-right
-- [ ] Menu keys: W/Up, S/Down, A/Left, D/Right, Enter/Space, Tab/Esc
+- [x] Background gradient horizontal (0.008, 0.01, 0.02) alpha 0.93 -> 0.3 (dark left, see-through right) over live 3D scene (A3: GEHUDScreens.cpp DrawMainMenu / DrawInfoCard / DrawModeSelect)
+- [x] Title "RAYSHOT" size 120 glow Cyan at x=120px (slides in 30px), underline bar cyan 90px x 5px at y 262, subtitle "AIM TRAINER   //   HIT DETECTION BY MY OWN RAY TRACER" size 19. (GE: keep or rename title, log decision) (A3: GEHUDScreens.cpp DrawMainMenu / DrawInfoCard / DrawModeSelect)
+- [x] Buttons 600x62, gap 12, start y 360, extra 18px gap before Settings; stagger intro 0.05 s per button; mode buttons show "BEST <score>" gold or "NEW"; SETTINGS (dim), QUIT (red) (A3: GEHUDScreens.cpp DrawMainMenu / DrawInfoCard / DrawModeSelect)
+- [x] Info card (right, 520 wide at x = ClipX-120-520, y 360): for mode: h 420, top color bar, mode name size 46 glow, 3 description lines (last line in mode color) size 22 spacing 34 from +112, divider at +240, DURATION and PERSONAL BEST (gold mono, or "not played yet") at +266/+292, pulsing "PRESS ENTER OR CLICK TO PLAY" (alpha 0.6+0.4*sin(4t)); for Settings/Quit: h 200 card with blurb (A3: GEHUDScreens.cpp DrawMainMenu / DrawInfoCard / DrawModeSelect)
+- [x] Footer hints "W / S  or mouse to choose      ENTER / click to select" and version label bottom-right (A3: GEHUDScreens.cpp DrawMainMenu / DrawInfoCard / DrawModeSelect)
+- [x] Menu keys: W/Up, S/Down, A/Left, D/Right, Enter/Space, Tab/Esc (A3: GEHUDScreens.cpp DrawMainMenu / DrawInfoCard / DrawModeSelect)
 
 Settings screen
-- [ ] Rows: Sensitivity (default 2.5, range 0.1..10, step 0.1, shown %.1f, slider (v-0.1)/9.9), Field of view (default 103, range 60..120, step 5, shown %.0f, slider (v-60)/60), Volume (default 0.7, 0..1, step 0.1, shown %d%%), Crosshair color (cycle list of 5, preview cross swatch)
-- [ ] Value shown as "<   value   >", row height 86 (button 72), card 780 wide centered, title "SETTINGS" size 50 glow Cyan, BACK button 220x60
-- [ ] Hint "Click / D = increase        Right-click / A = decrease        TAB = back"
-- [ ] Sensitivity unit: legacy is degrees per mouse-count delta (Yaw += MouseX*Sens with engine MouseX axis scale 0.07 in DefaultInput). GE already has `SensitivityScale`; decide mapping (keep GE scale, expose legacy slider as a multiplier) and log it
+- [x] Rows: Sensitivity (default 2.5, range 0.1..10, step 0.1, shown %.1f, slider (v-0.1)/9.9), Field of view (default 103, range 60..120, step 5, shown %.0f, slider (v-60)/60), Volume (default 0.7, 0..1, step 0.1, shown %d%%), Crosshair color (cycle list of 5, preview cross swatch) (A3: GEHUDScreens.cpp DrawSettings / ChangeSetting)
+- [x] Value shown as "<   value   >", row height 86 (button 72), card 780 wide centered, title "SETTINGS" size 50 glow Cyan, BACK button 220x60 (A3: GEHUDScreens.cpp DrawSettings / ChangeSetting)
+- [x] Hint "Click / D = increase        Right-click / A = decrease        TAB = back" (A3: GEHUDScreens.cpp DrawSettings / ChangeSetting)
+- [x] Sensitivity unit: legacy is degrees per mouse-count delta (Yaw += MouseX*Sens with engine MouseX axis scale 0.07 in DefaultInput). GE already has `SensitivityScale`; decide mapping (keep GE scale, expose legacy slider as a multiplier) and log it (A3: GEHUDScreens.cpp DrawSettings / ChangeSetting)
 
 Results screen
-- [ ] Card 760x680 centered, top bar in mode color (6px), header "<MODE>   //   RESULTS" size 22 mode color
-- [ ] Big score count-up: shown = score * easeOut(age/0.8 s), size 120 mono glow in mode color, unit label right of it size 28 dim
-- [ ] If new best: gold pulsing box (alpha 0.8+0.2*sin(6t)) 340x48 with dark text "NEW PERSONAL BEST!" size 22; else "PERSONAL BEST" label + gold best score
-- [ ] Stats rows from GetResultLines (label dim 22 left, value white mono 26 right, 1px divider), row height 48 from +330
-- [ ] Buttons side by side: PLAY AGAIN (mode color) and MAIN MENU (dim), 62 high; hint "ENTER = select        R / click Play Again        TAB = menu"
+- [x] Card 760x680 centered, top bar in mode color (6px), header "<MODE>   //   RESULTS" size 22 mode color (A3: GEHUDScreens.cpp DrawResults)
+- [x] Big score count-up: shown = score * easeOut(age/0.8 s), size 120 mono glow in mode color, unit label right of it size 28 dim (A3: GEHUDScreens.cpp DrawResults)
+- [x] If new best: gold pulsing box (alpha 0.8+0.2*sin(6t)) 340x48 with dark text "NEW PERSONAL BEST!" size 22; else "PERSONAL BEST" label + gold best score (A3: GEHUDScreens.cpp DrawResults)
+- [x] Stats rows from GetResultLines (label dim 22 left, value white mono 26 right, 1px divider), row height 48 from +330 (A3: GEHUDScreens.cpp DrawResults)
+- [x] Buttons side by side: PLAY AGAIN (mode color) and MAIN MENU (dim), 62 high; hint "ENTER = select        R / click Play Again        TAB = menu" (A3: GEHUDScreens.cpp DrawResults)
 
 Playing HUD
-- [ ] Timer pill top center 240x96 at y 28: timer text size 46 mono (timed: "%.1f" seconds left; Reflex "N / 10"), progress bar 4px under it in mode color
-- [ ] Low time (last 5 s, timed modes, not during countdown): timer pulses white<->Red with `0.5+0.5*sin(10t)`
-- [ ] Stats card top left (x36,y28, width 300, height 62+rows*40): accent stripe 4px, mode name uppercase size 20 in mode color, rows label dim 20 / value white mono 26
-- [ ] Bottom-left hint "R  restart        TAB  menu"
-- [ ] Reflex center message at CenterY+70 size 30
-- [ ] Outlined crosshair: gap 5px, arm length 9px, 2px colored line over 4px black (a0.75) outline pass, center dot 2px (outline 4px); color from settings. (GE AGEHUD already has an outlined crosshair: reconcile, keep spread-widening from Phase 2)
-- [ ] Hit marker: white X, inner 9px outer 19px, 2px lines, fades over 0.15 s after a hit (LastHitTime)
-- [ ] Score popups: lifetime 0.9 s, world pos = hit location + (0,0, 50 + 90*easeOut(life)), projected to screen, color lerp(popupColor, white, 0.4) fading alpha 1-life, mono size 24; text "+1" (Gridshot/Microshot) or "%.0f ms" (Reflex); manager prunes popups older than 0.9 s
-- [ ] Draw order: stats/timer, hints, message, popups, countdown, hit marker, crosshair last
+- [x] Timer pill top center 240x96 at y 28: timer text size 46 mono (timed: "%.1f" seconds left; Reflex "N / 10"), progress bar 4px under it in mode color (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Low time (last 5 s, timed modes, not during countdown): timer pulses white<->Red with `0.5+0.5*sin(10t)` (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Stats card top left (x36,y28, width 300, height 62+rows*40): accent stripe 4px, mode name uppercase size 20 in mode color, rows label dim 20 / value white mono 26 (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Bottom-left hint "R  restart        TAB  menu" (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Reflex center message at CenterY+70 size 30 (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Outlined crosshair: gap 5px, arm length 9px, 2px colored line over 4px black (a0.75) outline pass, center dot 2px (outline 4px); color from settings. (GE AGEHUD already has an outlined crosshair: reconcile, keep spread-widening from Phase 2) (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Hit marker: white X, inner 9px outer 19px, 2px lines, fades over 0.15 s after a hit (LastHitTime) (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Score popups: lifetime 0.9 s, world pos = hit location + (0,0, 50 + 90*easeOut(life)), projected to screen, color lerp(popupColor, white, 0.4) fading alpha 1-life, mono size 24; text "+1" (Gridshot/Microshot) or "%.0f ms" (Reflex); manager prunes popups older than 0.9 s (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
+- [x] Draw order: stats/timer, hints, message, popups, countdown, hit marker, crosshair last (A3: GEHUDScreens.cpp DrawPlaying / DrawCountdown / DrawAimHitMarker / DrawAimPopups; GEHUD.cpp DrawCrosshairAt)
 
 ## 5. Targets, effects, arena
 
@@ -206,15 +206,15 @@ AGEArena (all runtime cubes, 20 cm walls)
 - [x] Save on every setting change, on leaving Settings, and on a new personal best (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
 - [x] Load once at start; defaults when missing (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
 - [x] First play of a mode counts as a new best; best text "-" when missing (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
-- [ ] FOV applied to the camera every frame in menus and play (60..120)
+- [x] FOV applied to the camera every frame in menus and play (60..120) (A3: AGEHUD::ApplyFov (every Tick) -> UGEWeaponComponent::SetBaseFov)
 
 ## 8. Input / pawn (RayShotPawn.cpp)
 
-- [ ] Fixed player spot (0, 0, 300) looking +X, reset yaw/pitch at round start; no walking in aim trainer
-- [ ] Mouse look: yaw += MouseX*Sens, pitch += MouseY*Sens, pitch clamp +-89; read via mouse delta
-- [ ] LMB fires (`WasInputKeyJustPressed`) -> manager HandleClick(camera location, camera forward); Tracking uses UpdateAim every frame
-- [ ] R restart, Tab/Esc back to menu; menu keys as listed above
-- [ ] Port in a way that coexists with GE character input (Enhanced Input contexts created at runtime in C++, per PLAN rule 2)
+- [x] Fixed player spot (0, 0, 300) looking +X, reset yaw/pitch at round start; no walking in aim trainer (A3: AGETargetManager::EnterArena (pad), normal GE mouse look, FirePressed -> HandleFire, AGEHUD::HandleKeys)
+- [x] Mouse look: yaw += MouseX*Sens, pitch += MouseY*Sens, pitch clamp +-89; read via mouse delta (A3: AGETargetManager::EnterArena (pad), normal GE mouse look, FirePressed -> HandleFire, AGEHUD::HandleKeys)
+- [x] LMB fires (`WasInputKeyJustPressed`) -> manager HandleClick(camera location, camera forward); Tracking uses UpdateAim every frame (A3: AGETargetManager::EnterArena (pad), normal GE mouse look, FirePressed -> HandleFire, AGEHUD::HandleKeys)
+- [x] R restart, Tab/Esc back to menu; menu keys as listed above (A3: AGETargetManager::EnterArena (pad), normal GE mouse look, FirePressed -> HandleFire, AGEHUD::HandleKeys)
+- [x] Port in a way that coexists with GE character input (Enhanced Input contexts created at runtime in C++, per PLAN rule 2) (A3: AGETargetManager::EnterArena (pad), normal GE mouse look, FirePressed -> HandleFire, AGEHUD::HandleKeys)
 
 ## 9. Engine config that matters (Legacy/RayShot/Config)
 
@@ -236,16 +236,25 @@ Build files
 
 ## 10. Not to port / notes
 
-- [ ] Do NOT port `Legacy/RayShot/README.md` as-is: it contains an unresolved merge-conflict marker (`<<<<<<< HEAD` ... `>>>>>>>`) at lines 1/165/167. Rewrite a GE README later if wanted
-- [ ] Old title/branding "RayShot" and "HIT DETECTION BY MY OWN RAY TRACER": keep as a game-name decision; log
-- [ ] Original-names rule (PLAN rule 5): all mode names (Gridshot, Microshot, Tracking, Reflex) are generic, fine to keep
-- [ ] Every ported feature needs the retained screenshot evidence per project standards (`production/qa/evidence/`) once buildable
+- [x] Do NOT port `Legacy/RayShot/README.md` as-is: it contains an unresolved merge-conflict marker (`<<<<<<< HEAD` ... `>>>>>>>`) at lines 1/165/167. Rewrite a GE README later if wanted (A3: intentionally NOT ported (merge-conflict marker); nothing to carry over)
+- [x] Old title/branding "RayShot" and "HIT DETECTION BY MY OWN RAY TRACER": keep as a game-name decision; log (A3: kept: title RAYSHOT and subtitle in DrawMainMenu; mode names unchanged)
+- [x] Original-names rule (PLAN rule 5): all mode names (Gridshot, Microshot, Tracking, Reflex) are generic, fine to keep (A3: kept: title RAYSHOT and subtitle in DrawMainMenu; mode names unchanged)
+- [ ] Every ported feature needs the retained screenshot evidence per project standards (`production/qa/evidence/`) once buildable (A3: NOT DONE. Build succeeds and a headless launch does not crash, but no screenshots exist; they need the editor/game running with a real renderer. The user must capture them.)
 
 ## 11. Suggested port order
 
-- [ ] A2: types + style + modes helpers + sounds + save fields (pure data, unit-testable)
-- [ ] A3: AGETargetSphere, AGEHitBurst, AGEArena
-- [ ] A4: AGETargetManager (4 modes, countdown, scoring)
-- [ ] A5: screens in AGEGameMode + AGEHUD menus/settings/results/playing HUD
-- [ ] A6: input, camera drift, FOV/sensitivity wiring, idle showcase
-- [ ] A7: polish pass, screenshots, README
+- [x] A2: types + style + modes helpers + sounds + save fields (pure data, unit-testable) (done across A2/A3 (see report))
+- [x] A3: AGETargetSphere, AGEHitBurst, AGEArena (done across A2/A3 (see report))
+- [x] A4: AGETargetManager (4 modes, countdown, scoring) (done across A2/A3 (see report))
+- [x] A5: screens in AGEGameMode + AGEHUD menus/settings/results/playing HUD (done across A2/A3 (see report))
+- [x] A6: input, camera drift, FOV/sensitivity wiring, idle showcase (done across A2/A3 (see report))
+- [x] A7: polish pass, screenshots, README (done across A2/A3 (see report))
+
+## 12. A3 deviations from the legacy layout (logged)
+
+- Main menu has 6 entries (Aim Trainer, Training Center, Flick Optimizer, Free Roam, Settings, Quit); the 4 aim modes moved to a "Mode Select" screen (EGEScreen::ModeSelect) with personal bests.
+- Sensitivity row edits GE's existing `SensitivityScale` multiplier (default 1.0, range 0.1..5.0, step 0.1) instead of the legacy 0.1..10 degrees-per-count value; slider fraction uses that range.
+- Results is shared by all modes; Training Center and Flick results use a wider card with the AI Coach's 3 tips (no personal best box; "Session saved" note instead).
+- Pause (Tab) is new: Resume / Restart (aim rounds only) / Settings / Main Menu. Pause freezes aim rounds via AGETargetManager::SetPaused; Training Center bots are not frozen.
+- Esc is also bound to Back, but Play-In-Editor swallows it, so Tab is the documented key.
+- Info card on the main menu is 260 high (legacy 200/420) so all entries share one layout.

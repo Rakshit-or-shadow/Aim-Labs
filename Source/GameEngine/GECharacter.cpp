@@ -1,5 +1,6 @@
 #include "GECharacter.h"
 #include "GETargetManager.h"
+#include "GEHUD.h"
 #include "GEWeaponComponent.h"
 #include "GETrainingManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -227,5 +228,21 @@ void AGECharacter::WheelUp() { if (Weapons) { Weapons->CycleWeapon(-1); } }
 void AGECharacter::WheelDown() { if (Weapons) { Weapons->CycleWeapon(1); } }
 void AGECharacter::SelectSlot(int32 Index) { if (Weapons) { Weapons->SelectWeapon(Index); } }
 
-void AGECharacter::TeleportPressed() { if (UGETrainingManager* M = UGETrainingManager::Get(this)) { M->ToggleTeleport(this); } }
-void AGECharacter::MenuPressed() { if (UGETrainingManager* M = UGETrainingManager::Get(this)) { M->ToggleMenu(); } }
+// T and M only work while the HUD flow allows it (free roam / Training Center screens), not behind the menus.
+static bool GEHotkeysAllowed(const AGECharacter* Character)
+{
+	const APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	const AGEHUD* HUD = PC ? Cast<AGEHUD>(PC->GetHUD()) : nullptr;
+	return HUD == nullptr || HUD->AllowTrainingHotkeys();
+}
+
+void AGECharacter::TeleportPressed()
+{
+	if (!GEHotkeysAllowed(this)) { return; }
+	if (UGETrainingManager* M = UGETrainingManager::Get(this)) { M->ToggleTeleport(this); }
+}
+void AGECharacter::MenuPressed()
+{
+	if (!GEHotkeysAllowed(this)) { return; }
+	if (UGETrainingManager* M = UGETrainingManager::Get(this)) { M->ToggleMenu(); }
+}
