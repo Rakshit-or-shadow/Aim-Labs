@@ -1,6 +1,7 @@
 #include "GEGameMode.h"
 #include "GEHUD.h"
 #include "GETargetDummy.h"
+#include "GETrainingCenter.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerStart.h"
 #include "EngineUtils.h"
@@ -38,6 +39,16 @@ void AGEGameMode::BeginPlay()
 			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 			World->SpawnActor<AGETargetDummy>(AGETargetDummy::StaticClass(), Loc, FRotator(0, FaceStart.Yaw, 0), Params);
 		}
-		break; // only the first start
+		// Training Center: built far away (decision: no new .umap without the editor). Press T to go there.
+			const FVector Far(T.GetLocation().X, T.GetLocation().Y + TrainingCenterOffsetY, T.GetLocation().Z - 90.0f);
+			const FTransform CenterT(FRotator::ZeroRotator, Far);
+			if (AGETrainingCenter* TC = World->SpawnActorDeferred<AGETrainingCenter>(AGETrainingCenter::StaticClass(), CenterT))
+			{
+				FVector PortalLoc = T.TransformPositionNoScale(FVector(250, -350, 0));
+				PortalLoc.Z = T.GetLocation().Z - 90.0f;
+				TC->SetPortal(PortalLoc, T.GetRotation().Rotator().Yaw);
+				TC->FinishSpawning(CenterT);
+			}
+			break; // only the first start
 	}
 }

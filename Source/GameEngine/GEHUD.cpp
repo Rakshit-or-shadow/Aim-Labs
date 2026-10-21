@@ -3,6 +3,158 @@
 #include "Engine/Engine.h"
 #include "GECharacter.h"
 #include "GEWeaponComponent.h"
+#include "GETrainingManager.h"
+#include "GameFramework/PlayerController.h"
+
+// ---------------------------------------------------------------------------
+// Phase 3: Training Center overlay, popups and clickable menu (key M).
+// ---------------------------------------------------------------------------
+void AGEHUD::DrawTrainingOverlay()
+{
+	UGETrainingManager* Manager = UGETrainingManager::Get(this);
+	if (!Manager || !Manager->GetCenter())
+	{
+		return;
+	}
+	DrawPopups(*Manager);
+
+	// Small hint + live stats while a session runs.
+	DrawText(TEXT("T: Training Center   M: Menu"), FLinearColor(0.7f, 0.9f, 1.0f), 20.0f, 20.0f, GEngine->GetSmallFont());
+	if (Manager->IsSessionRunning() && !Manager->IsMenuOpen())
+	{
+		const FGETrainingStats& S = Manager->GetStats();
+		DrawText(FString::Printf(TEXT("Kills %d   Acc %.0f%%   HS %.0f%%"), S.Kills, S.GetAccuracyPercent(), S.GetHeadshotPercent()),
+			FLinearColor::Yellow, 20.0f, 42.0f, GEngine->GetSmallFont());
+	}
+	if (Manager->IsMenuOpen())
+	{
+		DrawTrainingMenu(*Manager);
+	}
+}
+
+void AGEHUD::DrawPopups(UGETrainingManager& Manager)
+{
+	const float Now = GetWorld()->GetTimeSeconds();
+	for (const FGEPopup& P : Manager.GetPopups())
+	{
+		const float Age = Now - P.SpawnTime;
+		const float Alpha = 1.0f - Age / Manager.GetPopupDuration();
+		// Text floats upward while it fades out.
+		const FVector Screen = Project(P.WorldLocation + FVector(0, 0, Age * 60.0f));
+		if (Screen.Z <= 0.0f)
+		{
+			continue; // behind the camera
+		}
+		float W = 0.0f, H = 0.0f;
+		GetTextSize(P.Text, W, H, GEngine->GetMediumFont(), 1.4f);
+		FLinearColor Col = P.Color;
+		Col.A = FMath::Clamp(Alpha, 0.0f, 1.0f);
+		DrawText(P.Text, Col, Screen.X - W * 0.5f, Screen.Y - H, GEngine->GetMediumFont(), 1.4f);
+	}
+}
+
+void AGEHUD::DrawButton(const FString& Label, const FName& Name, float X, float Y, float W, float H, bool bSelected)
+{
+	float MX = -1.0f, MY = -1.0f;
+	if (APlayerController* PC = GetOwningPlayerController())
+	{
+		PC->GetMousePosition(MX, MY);
+	}
+	const bool bHover = MX >= X && MX <= X + W && MY >= Y && MY <= Y + H;
+	FLinearColor Fill = bSelected ? FLinearColor(0.1f, 0.5f, 0.8f, 0.95f) : FLinearColor(0.15f, 0.15f, 0.18f, 0.95f);
+	if (bHover) { Fill += FLinearColor(0.15f, 0.15f, 0.15f, 0.0f); }
+	DrawRect(Fill, X, Y, W, H);
+	float TW = 0.0f, TH = 0.0f;
+	GetTextSize(Label, TW, TH, GEngine->GetSmallFont(), 1.0f);
+	DrawText(Label, FLinearColor::White, X + (W - TW) * 0.5f, Y + (H - TH) * 0.5f, GEngine->GetSmallFont());
+	AddHitBox(FVector2D(X, Y), FVector2D(W, H), Name, true);
+}
+
+void AGEHUD::DrawTrainingMenu(UGETrainingManager& Manager)
+{
+	const float PanelW = 640.0f, PanelH = 470.0f;
+	const float PX = (Canvas->ClipX - PanelW) * 0.5f;
+	const float PY = (Canvas->ClipY - PanelH) * 0.5f;
+	DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.85f), PX, PY, PanelW, PanelH);
+	DrawText(TEXT("TRAINING CENTER"), FLinearColor::White, PX + 20.0f, PY + 12.0f, GEngine->GetMediumFont(), 1.3f);
+
+	const float BH = 34.0f;
+	const float BW = 110.0f;
+	const float Gap = 8.0f;
+	float Y = PY + 60.0f;
+
+	// Mode row
+	DrawText(TEXT("Mode"), FLinearColor::Yellow, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 20.0f;
+	const EGETrainingMode Modes[3] = { EGETrainingMode::Static, EGETrainingMode::Strafing, EGETrainingMode::Peek };
+	for (int32 i = 0; i < 3; ++i)
+	{
+		DrawButton(UGETrainingManager::ModeToString(Modes[i]), *FString::Printf(TEXT("Mode:%d"), (int32)Modes[i]), PX + 20.0f + i * (BW + Gap), Y, BW, BH, Manager.GetMode() == Modes[i]);
+	}
+	Y += BH + 14.0f;
+
+	// Difficulty row
+	DrawText(TEXT("Difficulty"), FLinearColor::Yellow, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 20.0f;
+	const TCHAR* DiffNames[3] = { TEXT("Easy"), TEXT("Medium"), TEXT("Hard") };
+	for (int32 i = 0; i < 3; ++i)
+	{
+		DrawButton(DiffNames[i], *FString::Printf(TEXT("Diff:%d"), i), PX + 20.0f + i * (BW + Gap), Y, BW, BH, (int32)Manager.GetDifficulty() == i);
+	}
+	Y += BH + 14.0f;
+
+	// Weapon row
+	DrawText(TEXT("Weapon"), FLinearColor::Yellow, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 20.0f;
+	if (UGEWeaponComponent* Weapon = Manager.GetPlayerWeapon())
+	{
+		const TArray<FGEWeaponData>& Weapons = Weapon->GetWeapons();
+		const float WBW = (PanelW - 40.0f - Gap * (Weapons.Num() - 1)) / FMath::Max(Weapons.Num(), 1);
+		for (int32 i = 0; i < Weapons.Num(); ++i)
+		{
+			DrawButton(Weapons[i].Name, *FString::Printf(TEXT("Wpn:%d"), i), PX + 20.0f + i * (WBW + Gap), Y, WBW, BH, Manager.GetWeaponIndex() == i);
+		}
+	}
+	Y += BH + 18.0f;
+
+	// Start / Stop and Close
+	DrawButton(Manager.IsSessionRunning() ? TEXT("STOP") : TEXT("START"), TEXT("Toggle"), PX + 20.0f, Y, 160.0f, 40.0f, Manager.IsSessionRunning());
+	DrawButton(TEXT("Close (M)"), TEXT("Close"), PX + 190.0f, Y, 120.0f, 40.0f, false);
+	Y += 56.0f;
+
+	// Stats
+	const FGETrainingStats& S = Manager.GetStats();
+	DrawText(Manager.IsSessionRunning() ? TEXT("Session stats (running)") : TEXT("Last session stats"), FLinearColor::Yellow, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 22.0f;
+	DrawText(FString::Printf(TEXT("Kills: %d     Headshot kills: %.0f%%     Time: %.0f s"), S.Kills, S.GetHeadshotPercent(), S.Duration), FLinearColor::White, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 20.0f;
+	DrawText(FString::Printf(TEXT("Accuracy: %.0f%% (%d/%d)     First-shot accuracy: %.0f%% (%d/%d)"), S.GetAccuracyPercent(), S.Hits, S.Shots, S.GetFirstShotAccuracyPercent(), S.FirstShotHits, S.FirstShots), FLinearColor::White, PX + 20.0f, Y, GEngine->GetSmallFont());
+	Y += 20.0f;
+	DrawText(FString::Printf(TEXT("Avg time to kill: %.2f s"), S.GetAverageTimeToKill()), FLinearColor::White, PX + 20.0f, Y, GEngine->GetSmallFont());
+}
+
+void AGEHUD::NotifyHitBoxClick(FName BoxName)
+{
+	Super::NotifyHitBoxClick(BoxName);
+	UGETrainingManager* Manager = UGETrainingManager::Get(this);
+	if (!Manager || !Manager->IsMenuOpen())
+	{
+		return;
+	}
+	// Box names look like "Mode:1", "Diff:2", "Wpn:3", "Toggle", "Close".
+	const FString Name = BoxName.ToString();
+	FString Kind, Value;
+	if (!Name.Split(TEXT(":"), &Kind, &Value))
+	{
+		Kind = Name;
+	}
+	const int32 Index = FCString::Atoi(*Value);
+	if (Kind == TEXT("Mode")) { Manager->SetMode((EGETrainingMode)Index); }
+	else if (Kind == TEXT("Diff")) { Manager->SetDifficulty((EGEDifficulty)Index); }
+	else if (Kind == TEXT("Wpn")) { Manager->SetWeaponIndex(Index); }
+	else if (Kind == TEXT("Toggle")) { Manager->IsSessionRunning() ? Manager->StopSession() : Manager->StartSession(); }
+	else if (Kind == TEXT("Close")) { Manager->ToggleMenu(); }
+}
 
 void AGEHUD::DrawHUD()
 {
@@ -55,6 +207,8 @@ void AGEHUD::DrawHUD()
 		DrawWeaponInfo(*Weapon);
 		DrawHitMarker(*Weapon, CenterX, CenterY);
 	}
+
+	DrawTrainingOverlay();
 
 	// Debug speed readout (toggle with F3).
 	if (const AGECharacter* Char = Cast<AGECharacter>(GetOwningPawn()))

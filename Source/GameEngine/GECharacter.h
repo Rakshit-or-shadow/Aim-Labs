@@ -171,6 +171,13 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<class UInputAction>> WeaponSlotActions;
 
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> TeleportAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> MenuAction;
+	void TeleportPressed();
+	void MenuPressed();
+
 	void FirePressed();
 	void FireReleased();
 	void AimPressed();

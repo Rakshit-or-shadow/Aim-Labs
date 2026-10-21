@@ -57,7 +57,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|HUD")
 	float HitMarkerDuration = 0.25f;
 
+	/** Phase 3: receives clicks on the menu buttons (hit boxes added in DrawTrainingMenu). */
+	virtual void NotifyHitBoxClick(FName BoxName) override;
+
 private:
+	// Phase 3 Training Center UI
+	void DrawTrainingOverlay();
+	void DrawTrainingMenu(class UGETrainingManager& Manager);
+	void DrawPopups(class UGETrainingManager& Manager);
+	/** Draws a clickable button and registers its hit box. */
+	void DrawButton(const FString& Label, const FName& Name, float X, float Y, float W, float H, bool bSelected);
+
 	void DrawWeaponInfo(const class UGEWeaponComponent& Weapon);
 	void DrawHitMarker(const class UGEWeaponComponent& Weapon, float CX, float CY);
 	void DrawScope(float CX, float CY);

@@ -1,5 +1,6 @@
 #include "GECharacter.h"
 #include "GEWeaponComponent.h"
+#include "GETrainingManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
@@ -144,6 +145,11 @@ void AGECharacter::CreateRuntimeInput()
 	GEMappingContext->MapKey(ReloadAction, EKeys::R);
 	GEMappingContext->MapKey(WheelUpAction, EKeys::MouseScrollUp);
 	GEMappingContext->MapKey(WheelDownAction, EKeys::MouseScrollDown);
+	// Training Center: T teleports in / out, M opens the menu.
+	TeleportAction = NewObject<UInputAction>(this, TEXT("GE_Teleport"));
+	MenuAction = NewObject<UInputAction>(this, TEXT("GE_Menu"));
+	GEMappingContext->MapKey(TeleportAction, EKeys::T);
+	GEMappingContext->MapKey(MenuAction, EKeys::M);
 	const FKey SlotKeys[5] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five };
 	for (int32 i = 0; i < 5; ++i)
 	{
@@ -179,6 +185,8 @@ void AGECharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &AGECharacter::CrouchPressed);
 		EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AGECharacter::CrouchReleased);
 		EIC->BindAction(SpeedReadoutAction, ETriggerEvent::Started, this, &AGECharacter::ToggleSpeedReadout);
+		EIC->BindAction(TeleportAction, ETriggerEvent::Started, this, &AGECharacter::TeleportPressed);
+		EIC->BindAction(MenuAction, ETriggerEvent::Started, this, &AGECharacter::MenuPressed);
 	}
 }
 
@@ -195,3 +203,6 @@ void AGECharacter::ReloadPressed() { if (Weapons) { Weapons->ReloadPressed(); } 
 void AGECharacter::WheelUp() { if (Weapons) { Weapons->CycleWeapon(-1); } }
 void AGECharacter::WheelDown() { if (Weapons) { Weapons->CycleWeapon(1); } }
 void AGECharacter::SelectSlot(int32 Index) { if (Weapons) { Weapons->SelectWeapon(Index); } }
+
+void AGECharacter::TeleportPressed() { if (UGETrainingManager* M = UGETrainingManager::Get(this)) { M->ToggleTeleport(this); } }
+void AGECharacter::MenuPressed() { if (UGETrainingManager* M = UGETrainingManager::Get(this)) { M->ToggleMenu(); } }

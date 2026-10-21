@@ -26,4 +26,8 @@ protected:
 	/** Phase 2 test targets: spawned in front of the player start on the intro map. */
 	UPROPERTY(EditDefaultsOnly, Category = "GE|Targets")
 	TArray<FVector> DummyOffsets = { FVector(800, -250, 0), FVector(1400, 250, 0), FVector(2200, -400, 0), FVector(3000, 400, 0) };
+
+	/** Phase 3: how far (cm, along world Y) from the player start the Training Center is built. */
+	UPROPERTY(EditDefaultsOnly, Category = "GE|Training")
+	float TrainingCenterOffsetY = 200000.0f;
 };
