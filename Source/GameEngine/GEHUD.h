@@ -179,7 +179,9 @@ private:
 	/** Word-wrapped label. MaxWidth is in real pixels. Returns the Y below the last line. */
 	float DrawWrappedLabel(const FString& Text, float X, float Y, float MaxWidth, FLinearColor Color, float PixelSize);
 	FVector2D MeasureText(const FString& Text, float PixelSize, bool bMono = false);
-	UFont* GetFont(bool bMono) const;
+	UFont* GetFont(bool bMono);
+	/** Loads Rajdhani / Share Tech Mono once (falls back to Roboto / DroidSansMono) and logs which. */
+	void EnsureFonts();
 	/** A copy of the font made at the right size, so text is sharp instead of stretched. */
 	UFont* GetSizedFont(bool bMono, float PixelSize, float& OutScale);
 	float Px(float Value) const { return Value * UIScale; }
@@ -212,6 +214,10 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UFont> MonoFont;
+	/** UI text font: Rajdhani SemiBold, or null to use the engine font. */
+	UPROPERTY(Transient)
+	TObjectPtr<UFont> UIFont;
+	bool bFontsLoaded = false;
 	/** Cached sized copies of the fonts (key = size bucket * 2 + mono flag). */
 	UPROPERTY(Transient)
 	TMap<int32, TObjectPtr<UFont>> SizedFonts;

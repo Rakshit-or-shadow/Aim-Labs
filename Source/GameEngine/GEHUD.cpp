@@ -308,6 +308,10 @@ void AGEHUD::DrawHUD()
 
 	// Everything in the menus is designed for 1080p and scaled to the real screen size.
 	UIScale = Canvas->ClipY / 1080.0f;
+	if (const UGESaveGame* ThemeSave = GetSave())
+	{
+		GEStyle::SetActiveTheme(ThemeSave->UITheme); // the UI Theme setting applies live
+	}
 	FrameDeltaTime = GetWorld()->GetDeltaSeconds();
 	NowTime = GetWorld()->GetTimeSeconds();
 
