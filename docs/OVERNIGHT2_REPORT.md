@@ -21,7 +21,7 @@ Unattended second overnight job. One entry per stage: status, summary, build, co
   - Merged settings and bests into UGESaveGame (BestScores, FieldOfView, Volume, CrosshairColor; old GE_Profile slot loads unchanged).
   - Arena is spawned by AGEGameMode at -300000 cm Y; AGETargetManager::StartMode/StopMode teleport to the pad, freeze movement, use the weapon's first-shot ray with RayTraceMath::DoesIntersect, and restore the player.
 - Build result: Succeeded (first attempt, no fixes needed)
-- Commit: see git log ("Stage A2: port core systems"); report commit follows
+- Commit: 1c1d06f (report commit follows)
 - Manual steps: open Lvl_IntroRoom, PIE, open the console and type `ge.aim.start 0` (0-3 or mode name); Tab leaves, R restarts, `ge.aim.stop` also leaves. HUD/menus for the modes arrive in A3 (no countdown or score is drawn yet; sounds and targets work).
 - Decisions:
   - Sensitivity: reused the existing SensitivityScale (no second sensitivity field). GE DefaultInput already has MouseX/Y/Mouse2D = 0.07, so it was not changed.
