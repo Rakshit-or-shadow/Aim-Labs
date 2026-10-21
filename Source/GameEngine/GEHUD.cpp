@@ -1,5 +1,7 @@
 #include "GEHUD.h"
 #include "Engine/Canvas.h"
+#include "Engine/Engine.h"
+#include "GECharacter.h"
 
 void AGEHUD::DrawHUD()
 {
@@ -28,6 +30,16 @@ void AGEHUD::DrawHUD()
 	DrawOutlinedRect(CenterX - HalfThick, CenterY - Gap - Size, Thick, Size);
 	// Bottom line
 	DrawOutlinedRect(CenterX - HalfThick, CenterY + Gap, Thick, Size);
+
+	// Debug speed readout (toggle with F3).
+	if (const AGECharacter* Char = Cast<AGECharacter>(GetOwningPawn()))
+	{
+		if (Char->IsSpeedReadoutVisible())
+		{
+			const FString Text = FString::Printf(TEXT("Speed: %.0f cm/s  %s"), Char->GetCurrentSpeed(), Char->IsOnGround() ? TEXT("Ground") : TEXT("Air"));
+			DrawText(Text, FLinearColor::Yellow, 20.0f, Canvas->ClipY - 50.0f, GEngine->GetSmallFont());
+		}
+	}
 }
 
 void AGEHUD::DrawOutlinedRect(float X, float Y, float W, float H)

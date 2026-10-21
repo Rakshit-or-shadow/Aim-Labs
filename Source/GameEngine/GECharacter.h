@@ -18,6 +18,57 @@ struct FGECharacterStats
 	float MaxHealth = 100.0f;
 };
 
+/** Movement tunables (Phase 1). Units: cm and seconds. Applied in the constructor and BeginPlay so they override the Blueprint. */
+USTRUCT(BlueprintType)
+struct FGEMovementSettings
+{
+	GENERATED_BODY()
+
+	/** Normal run speed (cm/s). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float RunSpeed = 540.0f;
+
+	/** Walk speed as a fraction of RunSpeed (hold Shift). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float WalkSpeedFraction = 0.4f;
+
+	/** Crouch speed as a fraction of RunSpeed (hold Ctrl). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float CrouchSpeedFraction = 0.3f;
+
+	/** Ground acceleration. High = reaches full speed quickly. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float Acceleration = 4000.0f;
+
+	/** Deceleration when no input. High = counter-strafing stops fast. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float BrakingDeceleration = 5000.0f;
+
+	/** Ground friction. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float GroundFriction = 8.0f;
+
+	/** Steering control while in the air (0 = none, 1 = full). Low on purpose. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float AirControl = 0.05f;
+
+	/** Jump launch speed (cm/s). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float JumpZVelocity = 450.0f;
+
+	/** Gravity multiplier. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float GravityScale = 1.6f;
+
+	/** Capsule half height while crouched (cm). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float CrouchedHalfHeight = 56.0f;
+
+	/** How fast the camera moves to its new height (interp speed). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	float CameraHeightInterpSpeed = 12.0f;
+};
+
 /**
  * Base C++ class for the player character.
  *
@@ -50,8 +101,28 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "GE|Hooks")
 	void OnCharacterReady();
 
+	/** Horizontal speed in cm/s. */
+	UFUNCTION(BlueprintPure, Category = "GE|Movement")
+	float GetCurrentSpeed() const;
+
+	/** True when standing on walkable ground. */
+	UFUNCTION(BlueprintPure, Category = "GE|Movement")
+	bool IsOnGround() const;
+
+	/** True while the debug speed readout is switched on (F3). */
+	UFUNCTION(BlueprintPure, Category = "GE|Movement")
+	bool IsSpeedReadoutVisible() const { return bShowSpeedReadout; }
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
+	/** Movement tunables. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Movement")
+	FGEMovementSettings Movement;
 
 	/** Designer-tunable stats. Edit in the Blueprint's Class Defaults. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GE|Stats")
@@ -60,4 +131,34 @@ protected:
 	/** Health right now. Set to Stats.MaxHealth when play begins. */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "GE|Stats")
 	float CurrentHealth = 0.0f;
+
+private:
+	/** Copies the Movement struct into CharacterMovement. */
+	void ApplyMovementSettings();
+	/** Creates the runtime input actions and mapping context. */
+	void CreateRuntimeInput();
+
+	void WalkPressed() { bWalkHeld = true; }
+	void WalkReleased() { bWalkHeld = false; }
+	void CrouchPressed() { Crouch(); }
+	void CrouchReleased() { UnCrouch(); }
+	void ToggleSpeedReadout() { bShowSpeedReadout = !bShowSpeedReadout; }
+
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> WalkAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> CrouchAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputAction> SpeedReadoutAction;
+	UPROPERTY(Transient)
+	TObjectPtr<class UInputMappingContext> GEMappingContext;
+
+	/** The BP camera, found by name "FirstPersonCamera". */
+	UPROPERTY(Transient)
+	TObjectPtr<class USceneComponent> CameraComponent;
+
+	/** Camera relative Z when standing (read at BeginPlay). */
+	float BaseCameraZ = 0.0f;
+	bool bWalkHeld = false;
+	bool bShowSpeedReadout = false;
 };
