@@ -64,3 +64,14 @@ Put files here (all optional, original art only):
 - ArtSource\Fonts\: Rajdhani (Medium, SemiBold) and Share Tech Mono TTFs (OFL, Google Fonts) if not already present.
 - ArtSource\FigmaUI\screens\: more kit pages (HUD, settings, pause, results) if they exist; only 5 pages were provided.
 - ArtSource\Audio\ui\: short UI sounds (hover, click, back, personal-best sting).
+
+## Stage B1: UI spec
+
+- Status: DONE
+- Summary:
+  - Viewed all 5 FigmaUI pages (no backgrounds/ or icons/ folders exist); wrote docs/UI_SPEC.md: primitives, 4-theme token table, typography, components, effects, per-page layout ideas, mapping for all 9 RAYSHOT screens.
+  - All hex values were read from small labels and are marked estimated; accent/tint values for bg tokens are derived.
+  - "Extra art that would make it better" list appended above with folder paths.
+- Build: n/a
+- Commit: 4265c93 (report commit follows)
+- Manual steps: eyeball the estimated hexes against 03_foundations.png; add the optional art.
