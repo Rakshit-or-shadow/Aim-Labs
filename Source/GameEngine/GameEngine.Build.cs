@@ -12,6 +12,7 @@ public class GameEngine : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"InputCore",
+			"RenderCore",
 			"EnhancedInput",
 			"UMG",
 			"Slate",

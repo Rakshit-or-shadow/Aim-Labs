@@ -36,6 +36,8 @@ struct FGECrosshairSettings
 	float OutlineThickness = 1.0f;
 };
 
+struct FGEUIKit;
+
 /** What the Results screen is showing. */
 enum class EGEResultKind : uint8
 {
@@ -63,6 +65,9 @@ UCLASS(Blueprintable)
 class GAMEENGINE_API AGEHUD : public AHUD
 {
 	GENERATED_BODY()
+
+	/** The UI component library draws through this HUD's private text helpers. */
+	friend struct FGEUIKit;
 
 public:
 	AGEHUD();

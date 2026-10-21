@@ -92,3 +92,20 @@ Put files here (all optional, original art only):
   - Rajdhani SemiBold is the single UI font in the HUD; Medium and Bold are imported and have paths in GEStyle but are not used yet. Display XL = 84 per task (the spec table said 64).
   - Canvas colors are used as raw sRGB hex/255, no gamma conversion, to match the kit swatches.
   - Fonts and OFL texts under ArtSource/Fonts were committed (they are needed to re-import); ArtSource/FigmaUI stays untracked.
+
+## Stage B3: UI component library
+
+- Status: DONE (built; nothing visually verified, no render in unattended mode)
+- Summary:
+  - New Source/GameEngine/GEUIKit.h/.cpp: struct FGEUIKit (made with `FGEUIKit Kit(this);` inside any AGEHUD draw function). Everything is procedural: chamfered panels/buttons/nav items (real cut polygons via FCanvasTriangleItem), Primary/Secondary/Ghost x Default/Hover/Pressed/Disabled buttons with chevron, nav items, header/tier tabs, page indicator, diamond tiles, slider, ON/OFF toggle, checkbox, stat rows, progress bar, toasts, text glow, selection glow, frame lines, corner tags, fluff + barcode, scanlines, glitch.
+  - UGESaveGame gains bScanlines (default OFF) and bGlitch (default ON); Settings has two new rows (Scanlines, Screen glitch). AGEHUD::DrawHUD runs the overlay (scanlines + 0.15s glitch on screen change) on menu screens.
+  - Debug gallery: console command `ge.ui.gallery` (toggle) draws every component in every state.
+- Build result: Succeeded (second run; first needed "RenderCore" added to GameEngine.Build.cs for GWhiteTexture)
+- Commit: see git log ("Stage B3: UI component library")
+- Manual steps: play, open console (`) and type ge.ui.gallery; check text/chamfer alignment, Settings new rows, glitch flash on screen change. Menu screens do not yet call the kit (B4); the chrome (FrameLines/CornerTags/Fluff) is opt-in via Kit.ScreenChrome("LABEL").
+- Decisions:
+  - Kit positions/sizes are real pixels; fixed sizes/text sizes are 1080p design values scaled internally (matches AGEHUD::DrawLabel).
+  - Kit is draw-only; hover/click hit boxes stay with the caller (state enum passed in).
+  - Build number shown in fluff is the constant FGEUIKit::BuildNumber (1021).
+  - Glitch is faked with colour-split bands (the already-drawn frame cannot be offset on a Canvas).
+  - NumSettings 5 -> 7 makes the Settings card taller (about 860 of 1080 px).

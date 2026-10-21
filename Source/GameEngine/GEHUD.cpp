@@ -1,4 +1,5 @@
 #include "GEHUD.h"
+#include "GEUIKit.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "GECharacter.h"
@@ -359,6 +360,18 @@ void AGEHUD::DrawHUD()
 	{
 		LastMouseX = MouseX;
 		LastMouseY = MouseY;
+	}
+
+	// Stage B3: optional scanlines + screen-change glitch on top of everything (menus only)
+	if (bFlowActive)
+	{
+		FGEUIKit(this).Overlay(ScreenAge());
+	}
+
+	// Stage B3: debug gallery of every UI component (console: ge.ui.gallery)
+	if (FGEUIKit::GalleryOn())
+	{
+		FGEUIKit(this).DrawGallery(NowTime);
 	}
 }
 

@@ -81,6 +81,12 @@ public:
 	/** UI theme: 0 Red (default), 1 Cyan, 2 Yellow, 3 Green. Old saves load as 0. */
 	UPROPERTY()
 	int32 UITheme = 0;
+	/** Faint scanline overlay on every screen. Default OFF; old saves load as OFF. */
+	UPROPERTY()
+	bool bScanlines = false;
+	/** Short colour-split glitch flash on screen changes. Default ON; old saves load as ON. */
+	UPROPERTY()
+	bool bGlitch = true;
 
 	/** Gets the saved best for a mode. Returns false if the mode was never played. */
 	bool GetBestScore(EGEAimMode Mode, float& OutBest) const;

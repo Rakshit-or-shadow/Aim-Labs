@@ -40,7 +40,7 @@ namespace GEStyle
 	inline const TCHAR* CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
 
 	// ---------- settings screen ----------
-	constexpr int32 NumSettings = 5; // Sensitivity, Field of View, Volume, Crosshair, UI Theme
+	constexpr int32 NumSettings = 7; // Sensitivity, Field of View, Volume, Crosshair, UI Theme, Scanlines, Glitch
 
 	// ---------- crosshair colors (index is saved in UGESaveGame::CrosshairColor) ----------
 	constexpr int32 NumCrosshairColors = 5;

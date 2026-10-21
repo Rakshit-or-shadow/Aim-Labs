@@ -136,7 +136,7 @@ int32 AGEHUD::GetItemCount() const
 	{
 	case EGEScreen::MainMenu:   return NumMenuItems;
 	case EGEScreen::ModeSelect: return GEAimModes::NumModes + 1; // 4 modes + Back
-	case EGEScreen::Settings:   return GEStyle::NumSettings + 1; // 4 settings + Back
+	case EGEScreen::Settings:   return GEStyle::NumSettings + 1; // settings rows + Back
 	case EGEScreen::Results:    return 2;                        // Play Again, Main Menu
 	case EGEScreen::Pause:      return GetPauseItems().Num();
 	default:                    return 0;
@@ -622,6 +622,12 @@ void AGEHUD::ChangeSetting(int32 Index, int32 Direction)
 	case 4: // UI theme (cycles; applied immediately, the HUD also re-reads it every frame)
 		Save->UITheme = (Save->UITheme + Direction + GEStyle::NumThemes) % GEStyle::NumThemes;
 		GEStyle::SetActiveTheme(Save->UITheme);
+		break;
+	case 5: // scanlines on/off
+		Save->bScanlines = !Save->bScanlines;
+		break;
+	case 6: // glitch on/off
+		Save->bGlitch = !Save->bGlitch;
 		break;
 	}
 	Save->Save(); // saved on every change
@@ -1152,9 +1158,17 @@ void AGEHUD::DrawSettings()
 			Label = TEXT("Crosshair color");
 			Value = GEStyle::GetCrosshairColorName(Save->CrosshairColor);
 			break;
-		default:
+		case 4:
 			Label = TEXT("UI theme");
 			Value = GEStyle::GetThemeName(Save->UITheme);
+			break;
+		case 5:
+			Label = TEXT("Scanlines");
+			Value = Save->bScanlines ? TEXT("On") : TEXT("Off");
+			break;
+		default:
+			Label = TEXT("Screen glitch");
+			Value = Save->bGlitch ? TEXT("On") : TEXT("Off");
 			break;
 		}
 
