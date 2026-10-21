@@ -1,4 +1,5 @@
 #include "GECharacter.h"
+#include "GETargetManager.h"
 #include "GEWeaponComponent.h"
 #include "GETrainingManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -208,7 +209,16 @@ void AGECharacter::OnCharacterReady_Implementation()
 	// Default does nothing. Later phases / Blueprints override this.
 }
 
-void AGECharacter::FirePressed() { if (Weapons) { Weapons->FirePressed(); } }
+void AGECharacter::FirePressed()
+{
+	// In an aim-trainer mode the click goes to the target manager (first-shot ray, no ammo).
+	if (AGETargetManager* Aim = AGETargetManager::Get(this); Aim && Aim->IsModeActive())
+	{
+		Aim->HandleFire();
+		return;
+	}
+	if (Weapons) { Weapons->FirePressed(); }
+}
 void AGECharacter::FireReleased() { if (Weapons) { Weapons->FireReleased(); } }
 void AGECharacter::AimPressed() { if (Weapons) { Weapons->AimPressed(); } }
 void AGECharacter::AimReleased() { if (Weapons) { Weapons->AimReleased(); } }

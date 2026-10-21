@@ -90,6 +90,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GE|Weapon")
 	void RefillAllAmmo();
 
+	/**
+	 * Aim-trainer shot: gives the camera's exact forward ray (no spread) and uses the current
+	 * weapon's fire rate, muzzle flash and kick. No ammo, no recoil. Returns false while on cooldown.
+	 */
+	bool TryAimTrainerShot(FVector& OutOrigin, FVector& OutDirection);
+
 	/** Lets menus turn shooting off. */
 	UFUNCTION(BlueprintCallable, Category = "GE|Weapon")
 	void SetFiringEnabled(bool bEnabled);

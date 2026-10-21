@@ -11,92 +11,92 @@ Existing in GameEngine now (do not duplicate): `AGEGameMode`, `AGEHUD` (outlined
 
 ## 0. Type mapping
 
-- [ ] `ERayShotMode` {Gridshot, Microshot, Tracking, Reflex} -> `EGEAimMode` (new, in `GEAimTypes.h`)
-- [ ] `ERayShotScreen` {MainMenu, Settings, Playing, Results} -> `EGEScreen` (new, `GEAimTypes.h`)
+- [x] `ERayShotMode` {Gridshot, Microshot, Tracking, Reflex} -> `EGEAimMode` (new, in `GEAimTypes.h`) (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `ERayShotScreen` {MainMenu, Settings, Playing, Results} -> `EGEScreen` (new, `GEAimTypes.h`) (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [ ] `ARayShotGameMode` (screens, menu selection, rounds, bests, input mode) -> extend `AGEGameMode` (or a helper `UGEAimTrainerState`); do not make a second game mode
-- [ ] `ATargetManager` -> `AGETargetManager`
-- [ ] `ATargetSphere` -> `AGETargetSphere`
-- [ ] `AArena` -> `AGEArena`
-- [ ] `AHitBurst` -> `AGEHitBurst`
+- [x] `ATargetManager` -> `AGETargetManager` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `ATargetSphere` -> `AGETargetSphere` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `AArena` -> `AGEArena` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `AHitBurst` -> `AGEHitBurst` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [ ] `ARayShotHUD` -> extend the single `AGEHUD` (menus, results, HUD, popups); no second HUD class
 - [ ] `ARayShotPawn` (camera-only pawn, mouse look, menu input) -> input handling goes in `AGEPlayerController`/`AGECharacter`; a fixed-spot aim pawn mode is optional (decide at port time, log it)
-- [ ] `URayShotSaveGame` -> fields merged into `UGESaveGame`
-- [ ] `RayShotStyle` namespace (colors, paths, crosshair palette) -> `GEStyle.h` namespace `GEStyle`
-- [ ] `RayShotModes` helper namespace -> `GEAimModes.h` namespace `GEAimModes`
-- [ ] `RayShotSounds` (procedural tones) -> `GESounds.h` namespace `GESounds` (check if Phase 2 weapon sounds already have a tone helper; reuse it)
+- [x] `URayShotSaveGame` -> fields merged into `UGESaveGame` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `RayShotStyle` namespace (colors, paths, crosshair palette) -> `GEStyle.h` namespace `GEStyle` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `RayShotModes` helper namespace -> `GEAimModes.h` namespace `GEAimModes` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
+- [x] `RayShotSounds` (procedural tones) -> `GESounds.h` namespace `GESounds` (check if Phase 2 weapon sounds already have a tone helper; reuse it) (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [ ] `RayTraceMath.h` -> already in GameEngine (unchanged)
-- [ ] `FStatLine`, `FScorePopup` structs -> `FGEStatLine`, `FGEScorePopup`
+- [x] `FStatLine`, `FScorePopup` structs -> `FGEStatLine`, `FGEScorePopup` (A2: Source/GameEngine/GEAimTypes.h, GEStyle.h, GEAimModes.h, GESounds.h, GETargetManager.h, GETargetSphere.h, GEHitBurst.h, GEArena.h, GESaveGame.h)
 - [ ] `RayShot.Build.cs` modules: Core, CoreUObject, Engine, InputCore -> confirm `GameEngine.Build.cs` has them (also needs nothing extra for Canvas/HUD)
 
 ## 1. Colors and style (RayShotStyle.h) -> GEStyle
 
-- [ ] Accent: Cyan (0, 0.85, 1), Magenta (1, 0.15, 0.55), Orange (1, 0.5, 0.05), Green (0.15, 1, 0.4), Purple (0.6, 0.3, 1), Gold (1, 0.78, 0.2), Red (1, 0.25, 0.25)
-- [ ] UI: TextWhite (1,1,1), TextDim (0.62, 0.66, 0.74), PanelFill (0.02, 0.025, 0.045, a0.86), PanelBorder (1,1,1,a0.08), ButtonFill (0.06, 0.07, 0.1, a0.78)
-- [ ] Arena surfaces: WallColor (0.035, 0.04, 0.055), FloorColor (0.03, 0.033, 0.045), BackWallColor (0.045, 0.05, 0.07)
-- [ ] Built-in assets: lit material `/Engine/BasicShapes/BasicShapeMaterial` ("Color" param); glow material `/Engine/EngineDebugMaterials/LevelColorationUnlitMaterial` ("Color" param, values >1 bloom); `/Engine/BasicShapes/Sphere`; `/Engine/BasicShapes/Cube`
-- [ ] Crosshair color list (index saved): 0 Green, 1 Cyan, 2 White, 3 Pink (Magenta), 4 Gold; NumCrosshairColors = 5; default index 0
-- [ ] `Glow(color, strength)` = RGB multiplied, A=1; `WithAlpha(color, a)` helpers
-- [ ] NumSettings = 4 (Sensitivity, FOV, Volume, Crosshair)
+- [x] Accent: Cyan (0, 0.85, 1), Magenta (1, 0.15, 0.55), Orange (1, 0.5, 0.05), Green (0.15, 1, 0.4), Purple (0.6, 0.3, 1), Gold (1, 0.78, 0.2), Red (1, 0.25, 0.25) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] UI: TextWhite (1,1,1), TextDim (0.62, 0.66, 0.74), PanelFill (0.02, 0.025, 0.045, a0.86), PanelBorder (1,1,1,a0.08), ButtonFill (0.06, 0.07, 0.1, a0.78) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Arena surfaces: WallColor (0.035, 0.04, 0.055), FloorColor (0.03, 0.033, 0.045), BackWallColor (0.045, 0.05, 0.07) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Built-in assets: lit material `/Engine/BasicShapes/BasicShapeMaterial` ("Color" param); glow material `/Engine/EngineDebugMaterials/LevelColorationUnlitMaterial` ("Color" param, values >1 bloom); `/Engine/BasicShapes/Sphere`; `/Engine/BasicShapes/Cube` (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Crosshair color list (index saved): 0 Green, 1 Cyan, 2 White, 3 Pink (Magenta), 4 Gold; NumCrosshairColors = 5; default index 0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] `Glow(color, strength)` = RGB multiplied, A=1; `WithAlpha(color, a)` helpers (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] NumSettings = 4 (Sensitivity, FOV, Volume, Crosshair) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 ## 2. Modes: exact rules (TargetManager.cpp)
 
 Shared
-- [ ] Mode accent colors: Gridshot Cyan, Microshot Orange, Tracking Green, Reflex Purple
-- [ ] Manager spawns 3 reusable targets once (BeginPlay) and reuses them in every mode; no spawn/destroy per hit
-- [ ] Manager default location: world (1000, 0, 320) (player stands at X=0, eye Z=300, looks +X)
-- [ ] Target area (editable): GridSize 5, GridSpacing 120, AreaHalfWidth 300, AreaHalfHeight 200, ReflexTargets 10, CountdownLength 3.0
-- [ ] Grid/area are in the manager's local Right/Up plane (Right = actor right vector, Up = actor up vector)
-- [ ] StartRound resets: Hits, Shots, ElapsedTime, OnTargetTime, bTrackingOnTarget, EarlyClicks, ReactionTimes, TooEarlyTime=-100, LastHitTime=-100, bReflexVisible=false, Popups cleared; all targets hidden, velocity zero, bobbing off
-- [ ] Targets are visible during the countdown (set up before GO), cannot be shot or scored until GO
-- [ ] Accuracy = 100 * Hits / Shots (0 if no shots)
-- [ ] Timed rounds: TimeLeft counts down from RoundLength only after GO; at <= 0 clamp to 0 and FinishRound
-- [ ] FinishRound: stop running, score = GetScore(), show idle targets, call game mode OnRoundFinished(score)
-- [ ] StopRound (Tab/menu mid-round): no score saved, idle targets return
-- [ ] Clicks: ignored while not running, during countdown, and in Tracking (Tracking has no clicking)
-- [ ] Hit test: closest active target (smallest T) via DoesIntersect with normalized direction; hidden targets ignored
+- [x] Mode accent colors: Gridshot Cyan, Microshot Orange, Tracking Green, Reflex Purple (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Manager spawns 3 reusable targets once (BeginPlay) and reuses them in every mode; no spawn/destroy per hit (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Manager default location: world (1000, 0, 320) (player stands at X=0, eye Z=300, looks +X) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Target area (editable): GridSize 5, GridSpacing 120, AreaHalfWidth 300, AreaHalfHeight 200, ReflexTargets 10, CountdownLength 3.0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Grid/area are in the manager's local Right/Up plane (Right = actor right vector, Up = actor up vector) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] StartRound resets: Hits, Shots, ElapsedTime, OnTargetTime, bTrackingOnTarget, EarlyClicks, ReactionTimes, TooEarlyTime=-100, LastHitTime=-100, bReflexVisible=false, Popups cleared; all targets hidden, velocity zero, bobbing off (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Targets are visible during the countdown (set up before GO), cannot be shot or scored until GO (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Accuracy = 100 * Hits / Shots (0 if no shots) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Timed rounds: TimeLeft counts down from RoundLength only after GO; at <= 0 clamp to 0 and FinishRound (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] FinishRound: stop running, score = GetScore(), show idle targets, call game mode OnRoundFinished(score) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] StopRound (Tab/menu mid-round): no score saved, idle targets return (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Clicks: ignored while not running, during countdown, and in Tracking (Tracking has no clicking) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Hit test: closest active target (smallest T) via DoesIntersect with normalized direction; hidden targets ignored (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 Gridshot
-- [ ] 60 s, 3 targets radius 30, color Cyan
-- [ ] Positions: random cell of 5x5 grid centered on manager; cell = Center + Right*(col-2)*120 + Up*(row-2)*120; try up to 50 random cells, reject if an active target is within 1 cm; fallback Center
-- [ ] On hit: "+1" popup (target color), target MoveTo a new free cell (pop-in replays), Hits++
-- [ ] Miss: Shots++, miss sound
-- [ ] Score = Hits (integer). Higher better
-- [ ] Live stats: Hits, Accuracy (%.1f%%)
-- [ ] Result rows: Hits, Shots fired, Accuracy (%.1f%%), Hits per second (%.2f, Hits/ElapsedTime)
-- [ ] Description lines: "Three targets on a 5x5 grid." / "Click them as fast as you can." / "Trains: speed + target switching"; duration text "60 seconds"
+- [x] 60 s, 3 targets radius 30, color Cyan (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Positions: random cell of 5x5 grid centered on manager; cell = Center + Right*(col-2)*120 + Up*(row-2)*120; try up to 50 random cells, reject if an active target is within 1 cm; fallback Center (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] On hit: "+1" popup (target color), target MoveTo a new free cell (pop-in replays), Hits++ (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Miss: Shots++, miss sound (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Score = Hits (integer). Higher better (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Live stats: Hits, Accuracy (%.1f%%) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Result rows: Hits, Shots fired, Accuracy (%.1f%%), Hits per second (%.2f, Hits/ElapsedTime) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Description lines: "Three targets on a 5x5 grid." / "Click them as fast as you can." / "Trains: speed + target switching"; duration text "60 seconds" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 Microshot
-- [ ] 60 s, ONE target (Targets[0] only), radius 12, color Orange
-- [ ] Positions: uniform random in area X in [-300, 300], Y in [-200, 200] relative to manager
-- [ ] On hit: "+1" popup, MoveTo new random point, Hits++
-- [ ] Score = Hits; same live stats and result rows as Gridshot
-- [ ] Description: "One tiny target in random spots." / "Every click has to be precise." / "Trains: precision"; "60 seconds"
+- [x] 60 s, ONE target (Targets[0] only), radius 12, color Orange (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Positions: uniform random in area X in [-300, 300], Y in [-200, 200] relative to manager (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] On hit: "+1" popup, MoveTo new random point, Hits++ (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Score = Hits; same live stats and result rows as Gridshot (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Description: "One tiny target in random spots." / "Every click has to be precise." / "Trains: precision"; "60 seconds" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 Tracking
-- [ ] 45 s, ONE target radius 35, starts at manager center; color Magenta when off target, Green when crosshair is on it (recolor only when state changes)
-- [ ] No clicking. Each frame (after GO) test ray vs target; if on target, OnTargetTime += dt
-- [ ] At GO: pick a new direction. PickNewTrackingDirection: angle uniform [0, 2*PI], speed uniform [150, 350] cm/s, velocity = (Right*cos + Up*sin)*speed; DirectionTimer = uniform [0.4, 1.2] s; when timer <= 0 pick again
-- [ ] Movement: pos += velocity*dt; compute local X (Right) and Y (Up) offsets; if |X| > 300 and moving outward flip VelX; if |Y| > 200 and moving outward flip VelY; clamp X to [-300,300], Y to [-200,200]
-- [ ] Score = 100 * OnTargetTime / ElapsedTime (percent, 0 if ElapsedTime 0); shown "%.1f%%"; unit "% on target"
-- [ ] Live stats: "On target" (%.1f%%). Result rows: Time on target (%.1f s), Round length (%.0f s), On target (%.1f%%)
-- [ ] Description: "A target that strafes unpredictably." / "Keep your crosshair glued to it." / "Trains: smooth tracking"; "45 seconds"
+- [x] 45 s, ONE target radius 35, starts at manager center; color Magenta when off target, Green when crosshair is on it (recolor only when state changes) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] No clicking. Each frame (after GO) test ray vs target; if on target, OnTargetTime += dt (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] At GO: pick a new direction. PickNewTrackingDirection: angle uniform [0, 2*PI], speed uniform [150, 350] cm/s, velocity = (Right*cos + Up*sin)*speed; DirectionTimer = uniform [0.4, 1.2] s; when timer <= 0 pick again (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Movement: pos += velocity*dt; compute local X (Right) and Y (Up) offsets; if |X| > 300 and moving outward flip VelX; if |Y| > 200 and moving outward flip VelY; clamp X to [-300,300], Y to [-200,200] (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Score = 100 * OnTargetTime / ElapsedTime (percent, 0 if ElapsedTime 0); shown "%.1f%%"; unit "% on target" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Live stats: "On target" (%.1f%%). Result rows: Time on target (%.1f s), Round length (%.0f s), On target (%.1f%%) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Description: "A target that strafes unpredictably." / "Keep your crosshair glued to it." / "Trains: smooth tracking"; "45 seconds" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 Reflex
-- [ ] No timer; ends after 10 targets (ReflexTargets). Timer text shows "N / 10"; progress bar fraction = 1 - N/10
-- [ ] ONE target radius 30, color Purple, hidden until it appears
-- [ ] After GO: wait uniform [1.0, 2.5] s, then target appears at random area point (pop-in plays), stopwatch starts (ReflexAppearTime)
-- [ ] Click while target not visible = "too early": EarlyClicks++, TooEarlyTime=now, wait timer restarted to a fresh uniform [1.0, 2.5] s, miss sound; does NOT count as a shot
-- [ ] Click while visible: Shots++; hit -> reactionMs = (now - appearTime)*1000, stored; popup "%.0f ms"; target hidden; after N=10 FinishRound, else new wait uniform [1.0, 2.5]; miss while visible: Shots++, miss sound, target stays
-- [ ] Score = average reaction ms; LOWER IS BETTER (new best if smaller); shown "%.0f"; unit "ms average"; short form "%.0f ms"
-- [ ] Center message under crosshair: "Too early!" (red) for 0.8 s after early click; "Wait for it..." (white, alpha pulse 0.65+0.35*sin(6t)) while waiting; empty while target visible
-- [ ] Live stats: Last (ms or "-"), Average (ms or "-"), Early (count). Result rows: Average reaction (%.0f ms), Fastest (%.0f ms), Early clicks, Accuracy (%.1f%%)
-- [ ] Description: "Wait for the target to appear," / "then flick to it instantly." / "Trains: reaction time"; "10 targets"
+- [x] No timer; ends after 10 targets (ReflexTargets). Timer text shows "N / 10"; progress bar fraction = 1 - N/10 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] ONE target radius 30, color Purple, hidden until it appears (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] After GO: wait uniform [1.0, 2.5] s, then target appears at random area point (pop-in plays), stopwatch starts (ReflexAppearTime) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Click while target not visible = "too early": EarlyClicks++, TooEarlyTime=now, wait timer restarted to a fresh uniform [1.0, 2.5] s, miss sound; does NOT count as a shot (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Click while visible: Shots++; hit -> reactionMs = (now - appearTime)*1000, stored; popup "%.0f ms"; target hidden; after N=10 FinishRound, else new wait uniform [1.0, 2.5]; miss while visible: Shots++, miss sound, target stays (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Score = average reaction ms; LOWER IS BETTER (new best if smaller); shown "%.0f"; unit "ms average"; short form "%.0f ms" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Center message under crosshair: "Too early!" (red) for 0.8 s after early click; "Wait for it..." (white, alpha pulse 0.65+0.35*sin(6t)) while waiting; empty while target visible (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Live stats: Last (ms or "-"), Average (ms or "-"), Early (count). Result rows: Average reaction (%.0f ms), Fastest (%.0f ms), Early clicks, Accuracy (%.1f%%) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Description: "Wait for the target to appear," / "then flick to it instantly." / "Trains: reaction time"; "10 targets" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 Formatting (GEAimModes)
-- [ ] FormatScoreNumber: Tracking "%.1f", Reflex "%.0f", others rounded int
-- [ ] GetScoreUnit: Tracking "% on target", Reflex "ms average", others "hits"
-- [ ] FormatScore: Tracking "%.1f%%", Reflex "%.0f ms", others "%d hits"
-- [ ] LowerIsBetter(mode) true only for Reflex
+- [x] FormatScoreNumber: Tracking "%.1f", Reflex "%.0f", others rounded int (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] GetScoreUnit: Tracking "% on target", Reflex "ms average", others "hits" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] FormatScore: Tracking "%.1f%%", Reflex "%.0f ms", others "%d hits" (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] LowerIsBetter(mode) true only for Reflex (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 ## 3. Flow, countdown and screens (GameMode)
 
@@ -161,51 +161,51 @@ Playing HUD
 ## 5. Targets, effects, arena
 
 AGETargetSphere
-- [ ] Mesh = engine sphere (radius 50 base) with no collision (hit detection is DoesIntersect); lit material copy via dynamic material instance, "Color" param
-- [ ] Actor scale = Radius/50 * popScale
-- [ ] Pop-in: duration 0.18 s, "ease out back" c1 = 1.70158, c3 = c1+1: `pop = 1 + c3*(t-1)^3 + c1*(t-1)^2`, min 0.01; replays on SetActive(true) and MoveTo
-- [ ] Glow light: point light child at local (-90, 0, 20) (towards player), 12 candelas, attenuation 500, no shadows, color = target color, visibility follows active
-- [ ] SetColor updates material and light; SetActive hides/shows actor; fields: Radius (default 30), Velocity, bActive, bBobbing
-- [ ] Bobbing (menu showcase): Visual offset Z = sin(t*2 + randomPhase)*12; otherwise zero
+- [x] Mesh = engine sphere (radius 50 base) with no collision (hit detection is DoesIntersect); lit material copy via dynamic material instance, "Color" param (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Actor scale = Radius/50 * popScale (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Pop-in: duration 0.18 s, "ease out back" c1 = 1.70158, c3 = c1+1: `pop = 1 + c3*(t-1)^3 + c1*(t-1)^2`, min 0.01; replays on SetActive(true) and MoveTo (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Glow light: point light child at local (-90, 0, 20) (towards player), 12 candelas, attenuation 500, no shadows, color = target color, visibility follows active (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] SetColor updates material and light; SetActive hides/shows actor; fields: Radius (default 30), Velocity, bActive, bBobbing (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Bobbing (menu showcase): Visual offset Z = sin(t*2 + randomPhase)*12; otherwise zero (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
 
 Idle showcase (behind menus)
-- [ ] ShowIdleTargets: 3 targets, radius 40, colors Cyan, Purple, Orange, positions manager + Right*(i-1)*260 + Up*40, bobbing on, active; called at BeginPlay, StopRound and FinishRound
-- [ ] Menu camera drift: rotation (pitch sin(t*0.35)*1.5, yaw sin(t*0.22)*3, roll 0); pawn fixed at (0,0,300) looking +X
+- [x] ShowIdleTargets: 3 targets, radius 40, colors Cyan, Purple, Orange, positions manager + Right*(i-1)*260 + Up*40, bobbing on, active; called at BeginPlay, StopRound and FinishRound (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Menu camera drift: rotation (pitch sin(t*0.35)*1.5, yaw sin(t*0.22)*3, roll 0); pawn fixed at (0,0,300) looking +X (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
 
 AGEHitBurst
-- [ ] 14 glowing spheres + point light; spark color = Glow(targetColor, 4.0); StartScale = (radius/50)*0.22
-- [ ] Each spark: random unit direction, distance = radius * uniform[2.5, 4.5]; lifetime 0.4 s; position = dir*dist*(1-(1-p)^3); scale = StartScale*(1-p); then Destroy
-- [ ] Flash light: 60 candelas, attenuation radius*15, color target color, no shadows, intensity 60*(1-p)^2
+- [x] 14 glowing spheres + point light; spark color = Glow(targetColor, 4.0); StartScale = (radius/50)*0.22 (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Each spark: random unit direction, distance = radius * uniform[2.5, 4.5]; lifetime 0.4 s; position = dir*dist*(1-(1-p)^3); scale = StartScale*(1-p); then Destroy (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Flash light: 60 candelas, attenuation radius*15, color target color, no shadows, intensity 60*(1-p)^2 (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
 
 AGEArena (all runtime cubes, 20 cm walls)
-- [ ] Room: X from -500 to 1300, half-width 1000 (Y), height 900; floor top at z=2 (covers level floor), ceiling, left/right walls, back wall (BackWallColor), front wall behind player; cubes use movable mesh, no collision
-- [ ] Neon strips: strip 6 cm; Cyan x3.0 along floor edges (y = +-994, z=6), Pink (Magenta x2.5) along ceiling edges (z = 894), vertical Pink strips in both back corners; glow boxes cast no shadow
-- [ ] Back-wall frame (x = 1296): cyan, half-width 460, z 30..610
-- [ ] Floor grid: Cyan x0.35 lines every 200 cm: Y -800..800 (3x2 cm, length of room), X -400..1200 (3 wide); z=3
-- [ ] Player pad: pink square 140x140 centered origin, 4 cm lines, z=4
-- [ ] Lights: 4 cool-white (0.75, 0.85, 1.0) point lights at (0,+-500,850) and (800,+-500,850), 80 cd, radius 1800, source radius 30, shadows on; cyan wash light at (1150, 0, 320) 30 cd radius 800 no shadows
-- [ ] Post process (unbound volume): Bloom 1.2, Vignette 0.55, MotionBlurAmount 0 (aim trainers never blur), saturation 1.12, contrast 1.06, scene fringe 0.25, auto exposure bias -0.5
-- [ ] Arena must not break `Lvl_IntroRoom`/Training Center: spawn only while the aim trainer is active, or place it far offset; log decision. Existing room contents stay (do not delete assets)
+- [x] Room: X from -500 to 1300, half-width 1000 (Y), height 900; floor top at z=2 (covers level floor), ceiling, left/right walls, back wall (BackWallColor), front wall behind player; cubes use movable mesh, no collision (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Neon strips: strip 6 cm; Cyan x3.0 along floor edges (y = +-994, z=6), Pink (Magenta x2.5) along ceiling edges (z = 894), vertical Pink strips in both back corners; glow boxes cast no shadow (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Back-wall frame (x = 1296): cyan, half-width 460, z 30..610 (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Floor grid: Cyan x0.35 lines every 200 cm: Y -800..800 (3x2 cm, length of room), X -400..1200 (3 wide); z=3 (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Player pad: pink square 140x140 centered origin, 4 cm lines, z=4 (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Lights: 4 cool-white (0.75, 0.85, 1.0) point lights at (0,+-500,850) and (800,+-500,850), 80 cd, radius 1800, source radius 30, shadows on; cyan wash light at (1150, 0, 320) 30 cd radius 800 no shadows (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Post process (unbound volume): Bloom 1.2, Vignette 0.55, MotionBlurAmount 0 (aim trainers never blur), saturation 1.12, contrast 1.06, scene fringe 0.25, auto exposure bias -0.5 (A2: GETargetSphere / GEHitBurst / GEArena; manager-driven idle showcase in GETargetManager)
+- [x] Arena must not break `Lvl_IntroRoom`/Training Center: spawn only while the aim trainer is active, or place it far offset; log decision. Existing room contents stay (do not delete assets) (A2: arena spawned from AGEGameMode at -300000 Y; post-process only enabled during aim modes)
 
 ## 6. Sounds (RayShotSounds.h) -> GESounds
 
-- [ ] Procedural tone: sine, 44.1 kHz, 16-bit mono, pitch lerps StartFreq->EndFreq, 4 ms fade-in, fade-out (1-p)^2, amplitude 0.5, `USoundWaveProcedural` + `PlaySound2D` at volume; skip when volume <= 0
-- [ ] Hit 1500 -> 900 Hz, 0.07 s, vol 1.0
-- [ ] Miss 260 -> 180 Hz, 0.08 s, vol 0.6
-- [ ] Click 900 Hz flat, 0.03 s, vol 0.4
-- [ ] Countdown beep 700 Hz flat, 0.09 s, vol 0.7
-- [ ] Round start 1000 -> 1600 Hz, 0.18 s, vol 1.0
-- [ ] Round end 900 -> 400 Hz, 0.30 s, vol 1.0
-- [ ] New best 1000 -> 2000 Hz, 0.40 s, vol 1.0
-- [ ] All scaled by saved Volume setting (default 0.7)
+- [x] Procedural tone: sine, 44.1 kHz, 16-bit mono, pitch lerps StartFreq->EndFreq, 4 ms fade-in, fade-out (1-p)^2, amplitude 0.5, `USoundWaveProcedural` + `PlaySound2D` at volume; skip when volume <= 0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Hit 1500 -> 900 Hz, 0.07 s, vol 1.0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Miss 260 -> 180 Hz, 0.08 s, vol 0.6 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Click 900 Hz flat, 0.03 s, vol 0.4 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Countdown beep 700 Hz flat, 0.09 s, vol 0.7 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Round start 1000 -> 1600 Hz, 0.18 s, vol 1.0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] Round end 900 -> 400 Hz, 0.30 s, vol 1.0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] New best 1000 -> 2000 Hz, 0.40 s, vol 1.0 (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
+- [x] All scaled by saved Volume setting (default 0.7) (A2: GEStyle.h / GEAimModes.h / GETargetManager.cpp / GESounds.h)
 
 ## 7. Persistence (RayShotSaveGame.h) -> UGESaveGame
 
-- [ ] Add to the existing UGESaveGame (no new save class, no new slot): `TMap<FString,float> BestScores` (key = mode name "Gridshot" etc.), `Sensitivity` (2.5), `FieldOfView` (103), `Volume` (0.7), `CrosshairColor` (0)
-- [ ] Old slot name "RayShotSave" is NOT migrated (different project); use GE's existing slot
-- [ ] Save on every setting change, on leaving Settings, and on a new personal best
-- [ ] Load once at start; defaults when missing
-- [ ] First play of a mode counts as a new best; best text "-" when missing
+- [x] Add to the existing UGESaveGame (no new save class, no new slot): `TMap<FString,float> BestScores` (key = mode name "Gridshot" etc.), `Sensitivity` (2.5), `FieldOfView` (103), `Volume` (0.7), `CrosshairColor` (0) (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
+- [x] Old slot name "RayShotSave" is NOT migrated (different project); use GE's existing slot (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
+- [x] Save on every setting change, on leaving Settings, and on a new personal best (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
+- [x] Load once at start; defaults when missing (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
+- [x] First play of a mode counts as a new best; best text "-" when missing (A2: UGESaveGame fields + SubmitScore; slider UI in A3)
 - [ ] FOV applied to the camera every frame in menus and play (60..120)
 
 ## 8. Input / pawn (RayShotPawn.cpp)
@@ -219,20 +219,20 @@ AGEArena (all runtime cubes, 20 cm walls)
 ## 9. Engine config that matters (Legacy/RayShot/Config)
 
 DefaultEngine.ini (old)
-- [ ] `GlobalDefaultGameMode=/Script/RayShot.RayShotGameMode` -> GE already uses `BP_FirstPersonGameMode`; do not change; the GE mode drives the trainer
-- [ ] `GameDefaultMap` was a template map; GE keeps `Lvl_IntroRoom`
-- [ ] Renderer: `r.GenerateMeshDistanceFields=True`, `r.DynamicGlobalIlluminationMethod=1` (Lumen), `r.ReflectionMethod=1` (Lumen) -> already present in GE DefaultEngine.ini; verify only
-- [ ] ProjectName/Description/CopyrightNotice: informational only
+- [x] `GlobalDefaultGameMode=/Script/RayShot.RayShotGameMode` -> GE already uses `BP_FirstPersonGameMode`; do not change; the GE mode drives the trainer (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
+- [x] `GameDefaultMap` was a template map; GE keeps `Lvl_IntroRoom` (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
+- [x] Renderer: `r.GenerateMeshDistanceFields=True`, `r.DynamicGlobalIlluminationMethod=1` (Lumen), `r.ReflectionMethod=1` (Lumen) -> already present in GE DefaultEngine.ini; verify only (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
+- [x] ProjectName/Description/CopyrightNotice: informational only (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
 
 DefaultInput.ini (old)
-- [ ] MouseX/MouseY/Mouse2D axis Sensitivity = 0.07 (legacy default-ish; yaw uses raw delta * Sens setting). Check GE DefaultInput before copying; a changed axis scale would change feel of the existing character
-- [ ] Other axis configs are stock engine defaults: nothing to port
+- [x] MouseX/MouseY/Mouse2D axis Sensitivity = 0.07 (legacy default-ish; yaw uses raw delta * Sens setting). Check GE DefaultInput before copying; a changed axis scale would change feel of the existing character (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
+- [x] Other axis configs are stock engine defaults: nothing to port (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
 
 DefaultGame.ini
-- [ ] Only trivial project settings: nothing to port
+- [x] Only trivial project settings: nothing to port (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
 
 Build files
-- [ ] `RayShot.Target.cs`, `RayShotEditor.Target.cs`: stock targets, GE has own; nothing to port
+- [x] `RayShot.Target.cs`, `RayShotEditor.Target.cs`: stock targets, GE has own; nothing to port (A2: verified, GE DefaultInput already has MouseX/Y 0.07; unchanged)
 
 ## 10. Not to port / notes
 

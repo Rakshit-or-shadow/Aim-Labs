@@ -2,6 +2,8 @@
 #include "GEHUD.h"
 #include "GETargetDummy.h"
 #include "GETrainingCenter.h"
+#include "GEArena.h"
+#include "GETargetManager.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerStart.h"
 #include "EngineUtils.h"
@@ -49,6 +51,21 @@ void AGEGameMode::BeginPlay()
 				TC->SetPortal(PortalLoc, T.GetRotation().Rotator().Yaw);
 				TC->FinishSpawning(CenterT);
 			}
+
+		// Aim trainer arena: built far away along -Y (spawned from code, no map edit).
+		// The manager is placed 1000 cm in front of the arena's player pad.
+		{
+			const FVector ArenaOrigin(T.GetLocation().X, T.GetLocation().Y + AimArenaOffsetY, T.GetLocation().Z - 90.0f);
+			FActorSpawnParameters ArenaParams;
+			ArenaParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AimArena = World->SpawnActor<AGEArena>(AGEArena::StaticClass(), ArenaOrigin, FRotator::ZeroRotator, ArenaParams);
+			AimManager = World->SpawnActor<AGETargetManager>(AGETargetManager::StaticClass(),
+				ArenaOrigin + FVector(1000.0, 0.0, 320.0), FRotator::ZeroRotator, ArenaParams);
+			if (AimManager)
+			{
+				AimManager->SetArena(AimArena);
+			}
+		}
 			break; // only the first start
 	}
 }

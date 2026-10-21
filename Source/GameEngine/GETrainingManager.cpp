@@ -5,6 +5,7 @@
 #include "GEWeaponComponent.h"
 #include "GEFlickTracker.h"
 #include "GESaveGame.h"
+#include "GETargetManager.h"
 #include "GECoach.h"
 #include "GameFramework/Character.h"
 #include "Engine/World.h"
@@ -396,6 +397,11 @@ void UGETrainingManager::ToggleTeleport(AGECharacter* Character)
 {
 	AGETrainingCenter* TC = Center.Get();
 	if (!Character || !TC)
+	{
+		return;
+	}
+	// Not while the aim arena is active (it has its own teleport and restore).
+	if (const AGETargetManager* Aim = AGETargetManager::Get(this); Aim && Aim->IsModeActive())
 	{
 		return;
 	}

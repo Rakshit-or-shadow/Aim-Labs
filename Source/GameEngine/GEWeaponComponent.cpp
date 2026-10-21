@@ -373,6 +373,34 @@ void UGEWeaponComponent::CycleWeapon(int32 Direction)
 // --------------------------------------------------------------------------
 // Firing
 // --------------------------------------------------------------------------
+bool UGEWeaponComponent::TryAimTrainerShot(FVector& OutOrigin, FVector& OutDirection)
+{
+	if (!Camera || !GetWorld())
+	{
+		return false;
+	}
+	const FGEWeaponData& W = GetCurrentWeapon();
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (Now < NextFireTime)
+	{
+		return false; // still between shots of this weapon
+	}
+	NextFireTime = Now + 60.0f / FMath::Max(W.RoundsPerMinute, 1.0f);
+	LastShotTime = Now;
+
+	// the first-shot ray: straight through the crosshair, no spread
+	OutOrigin = Camera->GetComponentLocation();
+	OutDirection = Camera->GetForwardVector();
+
+	// looks and sound only (no ammo use, no spread growth, no recoil)
+	FlashEndTime = Now + MuzzleFlashTime;
+	if (FlashShape) { FlashShape->SetVisibility(true); }
+	if (FlashLight) { FlashLight->SetVisibility(true); }
+	KickBack = ViewmodelKickBack;
+	PlayTone(W.ShotToneHz, W.ShotSoundLength, 0.7f, 0.35f);
+	return true;
+}
+
 void UGEWeaponComponent::TryFire()
 {
 	if (!bFiringEnabled || bReloading || !Camera || !GetWorld())

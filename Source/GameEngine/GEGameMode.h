@@ -20,8 +20,21 @@ class GAMEENGINE_API AGEGameMode : public AGameModeBase
 public:
 	AGEGameMode();
 
+	/** The aim-trainer manager (spawned in the intro room), or null in other levels. */
+	class AGETargetManager* GetAimManager() const { return AimManager; }
+
 protected:
 	virtual void BeginPlay() override;
+
+	/** Aim trainer: how far (cm, along world Y) from the player start the aim arena is built. Negative = -Y. */
+	UPROPERTY(EditDefaultsOnly, Category = "GE|Aim")
+	float AimArenaOffsetY = -300000.0f;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class AGEArena> AimArena;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class AGETargetManager> AimManager;
 
 	/** Phase 2 test targets: spawned in front of the player start on the intro map. */
 	UPROPERTY(EditDefaultsOnly, Category = "GE|Targets")
