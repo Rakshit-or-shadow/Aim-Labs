@@ -1,5 +1,74 @@
 # OVERNIGHT 2 REPORT
 
+## SUMMARY (read this first)
+
+Everything below was built and launched headless only (no renderer). NOTHING HAS BEEN SEEN ON SCREEN. No visual verification of any screen, mode, font, theme or 3D look has happened.
+
+| Stage | What | Status | Commit |
+|---|---|---|---|
+| A1 | Archive legacy RayShot, port checklist | DONE | 160d13e, 20312de |
+| A2 | Port core systems (modes, targets, arena, save fields) | DONE, builds | 1c1d06f |
+| A3 | Screens and flow in AGEHUD | DONE, builds, headless launch OK | d968177 |
+| B1 | UI spec from Figma kit pages | DONE | 4265c93 |
+| B2 | Fonts + theme/style system | DONE, builds | 1bb8bb4 |
+| B3 | UI component library (GEUIKit) | DONE, builds | 3c4c296 |
+| B4 | Cyberpunk UI on all screens | DONE, builds, headless launch OK | f1a6568 |
+| B5 | Code review, README, this report | DONE | daec002 (review, also holds the README by accident), plus "Finish: README and final report" (see git log) |
+
+### B5 code review result
+Hand review (greps plus reading key paths) of `git diff 3d99847..HEAD -- Source/`. Checked: UObject pointer members (all have UPROPERTY / TObjectPtr), Targets array bounds (guarded by Num checks; BeginPlay only adds non-null), crosshair/theme index (clamped or default case), hit detection (aim shots use RayTraceMath::DoesIntersect in AGETargetManager::FindHitTarget), save compat (new UGESaveGame fields have defaults; old GE_Profile loads), input/cursor state (ApplyInputState resets ignore counters and sets GameOnly when leaving menus). No high-priority defect found, so no source code was changed. Build after review: Succeeded. The headless launch was not repeated since no code changed after B4's OK launch.
+Soft risks noted: the Training Center menu (GETrainingManager) and AGEHUD::ApplyInputState both set input mode and could fight if both are active; Slate focus may eat Tab.
+
+### PORT_CHECKLIST result
+Every line is [x] except one: "retained screenshot evidence in production/qa/evidence/" ([ ]). Reason: needs a real renderer and a human to capture it. All code items (types, style, 4 modes, arena, effects, sounds, save fields, screens, input, FOV/sensitivity wiring) are [x] meaning "implemented and builds", not "seen working".
+
+### Controls
+Gameplay: WASD move, mouse look, Space jump, Left Shift walk, Left Ctrl crouch, LMB fire, RMB ADS, R reload, 1-5 weapons, wheel cycle, F3 speed readout, T Training Center teleport, M Training Center menu.
+Menus: W/S or Up/Down select, A/D or Left/Right change value, Enter/Space confirm, LMB/RMB click (RMB decrements), Tab (Esc outside the editor) back/pause, R restart round / Play Again.
+Console: `ge.aim.start <0-3|name>`, `ge.aim.stop`, `ge.ui.gallery`.
+
+### What to test first (morning)
+1. Open GameEngine.uproject (build already done; rebuild with the command in README if asked). Open Lvl_IntroRoom and press Play.
+2. Main Menu appears with floating targets behind it. Check text fit and theme colours; check the log for "GE UI fonts: UI = Rajdhani SemiBold (imported)" (real vs fallback font unconfirmed).
+3. Navigate with W/S/Enter and with the mouse. Go to Mode Select.
+4. Play each aim mode: Gridshot, Microshot, Tracking, Reflex. Check 3-2-1-GO, hits/popups, timer, crosshair, Results (count-up, rank, personal best banner, Play Again with R).
+5. Press Tab mid-round (pause) and again (back). If Tab does nothing, Slate probably swallowed it: use Enter/mouse and note it.
+6. Settings: change every row (sensitivity, FOV, volume, crosshair colour, theme, scanlines, glitch). Check the grid fits at 1080p, theme cycling, and that values persist after restarting Play. Sliders are click +/- only, not draggable.
+7. Results screen from each mode; ranks use placeholder thresholds.
+8. Training Center (T or menu entry): bots, M menu, Stop shows Results with coach tips. Check walls are not too dark and fog is not too heavy.
+9. Flick Optimizer: run a session, Stop, view Results / coach panel.
+10. Free Roam: T, M, 5 weapons; Main Menu from every mode restores movement and hides the cursor correctly.
+11. Console: `ge.ui.gallery` to see all components.
+12. Take screenshots of every screen and mode into production/qa/evidence/ (closes the last checklist line).
+
+### Known risks / unverified
+- Tab possibly swallowed by Slate focus in GameAndUI input mode; Esc is swallowed by PIE.
+- Settings grid fit at 1080p (card about 860 px tall; other resolutions untested).
+- Fog density and dark Training Center/arena walls may be too heavy/dark (FogDensity in GEArena.cpp / GETrainingCenter.cpp).
+- Slider drag not implemented.
+- Rank thresholds (AimRank / PercentRank in GEHUDScreens.cpp) are placeholders.
+- Font real-vs-fallback unconfirmed; UI hex values were read from small labels (estimated).
+- Procedural audio, glitch and scanline effects never heard/seen.
+- Pause freezes aim rounds only; Training Center bots keep running.
+
+### Art to add next (all optional, original art only)
+- ArtSource\FigmaUI\backgrounds\ : city_dark_1920x1080.png (+4K), menu_alt.png
+- ArtSource\FigmaUI\icons\ and ArtSource\FigmaUI\icons\modes\ : icon set and per-mode icons
+- ArtSource\Logo\ : rayshot_logo.svg, rayshot_logo_1024.png
+- ArtSource\Audio\ui\ : hover, click, back, personal-best sounds
+- Full list under "Extra art that would make it better" below.
+
+### Manual steps / things for you to handle
+1. Play-test per the list above and capture screenshots into production/qa/evidence/.
+2. Uncommitted modification of Content/DemoTemplate/_Core/Lvl_IntroRoom.umap (left unstaged on purpose; probably an editor re-save: review it or `git checkout` it).
+3. Untracked ArtSource/FigmaUI/ (Figma kit pages; not committed on purpose: add or ignore it).
+4. Nothing has been pushed.
+
+### Is the old RayShot folder safe to delete?
+Path: C:\Users\raksh\OneDrive\Documents\projects\RayShot. NOT YET. It is only safe when every checklist item is [x], and the retained-screenshot item is not. It is archived in Legacy/RayShot (inside this repo). Delete the old folder after you have played the ported version once.
+
+---
+
 Unattended second overnight job. One entry per stage: status, summary, build, commit, manual steps.
 
 ## Stage A1: Archive legacy RayShot and port checklist
