@@ -221,7 +221,15 @@ void AGECharacter::FirePressed()
 	if (Weapons) { Weapons->FirePressed(); }
 }
 void AGECharacter::FireReleased() { if (Weapons) { Weapons->FireReleased(); } }
-void AGECharacter::AimPressed() { if (Weapons) { Weapons->AimPressed(); } }
+void AGECharacter::AimPressed()
+{
+	// No ADS zoom in the aim arena: it would change the FOV the target region is fitted to.
+	if (AGETargetManager* Aim = AGETargetManager::Get(this); Aim && Aim->IsModeActive())
+	{
+		return;
+	}
+	if (Weapons) { Weapons->AimPressed(); }
+}
 void AGECharacter::AimReleased() { if (Weapons) { Weapons->AimReleased(); } }
 void AGECharacter::ReloadPressed() { if (Weapons) { Weapons->ReloadPressed(); } }
 void AGECharacter::WheelUp() { if (Weapons) { Weapons->CycleWeapon(-1); } }

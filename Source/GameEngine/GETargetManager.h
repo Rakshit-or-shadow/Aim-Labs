@@ -23,6 +23,33 @@ class UCameraComponent;
 class UGEWeaponComponent;
 class UGESaveGame;
 
+/**
+ * Where targets may be this round. Built from AGEArena::GetPlayRegion() (the glowing frame) by
+ * AGETargetManager::RefreshBounds(): the frame is projected from the player's eye onto the target
+ * plane (a little in front of the wall) and scaled so it fits the camera at the lowest FOV.
+ * World axes: X forward, Y right, Z up.
+ */
+struct FGEAimBounds
+{
+	FVector Center = FVector::ZeroVector;  // middle of the target plane region
+	double HalfWidth = 0.0;                // half size (Y) of the region, before shrinking by a sphere radius
+	double HalfHeight = 0.0;               // half size (Z)
+	double PlaneX = 0.0;                   // world X where targets sit
+	double WallX = 0.0;                    // world X of the wall face
+	double Margin = 8.0;                   // extra gap to the frame and wall (cm)
+	FVector Eye = FVector::ZeroVector;     // the player's eye
+	FVector FrameCenter = FVector::ZeroVector; // the visible frame, for the on-screen check
+	double FrameHalfWidth = 0.0;
+	double FrameHalfHeight = 0.0;
+	bool bValid = false;
+
+	/** Room left for a sphere CENTER of this radius (cm). <= 0 means it does not fit. */
+	double UsableHalfWidth(double Radius) const { return HalfWidth - Radius - Margin; }
+	double UsableHalfHeight(double Radius) const { return HalfHeight - Radius - Margin; }
+	/** World X for a sphere center of this radius: on the plane, and always fully in front of the wall. */
+	double DepthFor(double Radius) const { return FMath::Min(PlaneX, WallX - Radius - Margin); }
+};
+
 /** Broadcast when a round ends by itself (time up or all Reflex targets done). Not sent by StopMode. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FGEOnAimRoundFinished, EGEAimMode, Mode, float, Score, bool, bNewBest);
 
@@ -41,13 +68,10 @@ public:
 
 	// ---------- settings (you can change these in the editor) ----------
 	UPROPERTY(EditAnywhere, Category = "Aim") int32 GridSize = 5;            // Gridshot: 5 x 5 grid
-	UPROPERTY(EditAnywhere, Category = "Aim") double GridSpacing = 120.0;    // cm between grid cells
-	UPROPERTY(EditAnywhere, Category = "Aim") double AreaHalfWidth = 300.0;  // random-spawn area (cm)
-	UPROPERTY(EditAnywhere, Category = "Aim") double AreaHalfHeight = 200.0;
 	UPROPERTY(EditAnywhere, Category = "Aim") int32 ReflexTargets = 10;      // Reflex: targets per round
 	UPROPERTY(EditAnywhere, Category = "Aim") float CountdownLength = 3.0f;  // seconds of 3-2-1 before a round
-	/** How far in front of the player pad (cm, arena +X) the target area is centered. */
-	UPROPERTY(EditAnywhere, Category = "Aim") double TargetDistance = 1000.0;
+	/** How far in front of the wall (cm) the target plane sits. Must be more than the biggest radius + margin. */
+	UPROPERTY(EditAnywhere, Category = "Aim") double WallInset = 120.0;
 
 	/** Fired when a round finishes by itself. */
 	UPROPERTY(BlueprintAssignable, Category = "Aim")
@@ -56,7 +80,20 @@ public:
 	// ---------- API for the menus ----------
 
 	/** Tells the manager which arena to use (the game mode calls this once). */
-	void SetArena(AGEArena* InArena) { Arena = InArena; }
+	void SetArena(AGEArena* InArena);
+
+	/** Current target bounds (the single source of truth for spawning / moving targets). */
+	const FGEAimBounds& GetBounds() const { return Bounds; }
+
+	/**
+	 * Self test (console: ge.aim.selftest). For each of the 4 modes spawns / moves targets 2000 times and
+	 * checks: inside bounds and inside the frame on screen, no overlap, nothing touching the wall, count right.
+	 * Logs PASS / FAIL per mode. Returns true if all modes pass.
+	 */
+	bool RunSelfTest();
+
+	/** ge.aim.debug: draws the frame region and the spawn bounds. */
+	void ToggleDebugDraw() { bDebugDraw = !bDebugDraw; }
 
 	/**
 	 * Starts a mode. The first call teleports the player onto the arena pad, freezes
@@ -181,10 +218,32 @@ private:
 	// floating hit texts
 	TArray<FGEScorePopup> Popups;
 
+	// ---------- target region ----------
+	FGEAimBounds Bounds;
+	double EyeZ = 0.0;
+	bool bHaveEyeZ = false;
+	bool bDebugDraw = false;
+	double AspectOverride = 0.0; // self test only: pretend the screen has this aspect ratio
+	/** One flag per target: true while it still has to be (re)placed. Retried every tick. */
+	TArray<bool> NeedsPlacement;
+
 	// ---------- helpers ----------
 	AGETargetSphere* FindHitTarget(const FVector& Origin, const FVector& Direction) const;
-	FVector GetFreeGridPoint() const;
-	FVector GetRandomAreaPoint() const;
+	/** Recomputes Bounds from the arena frame, the eye height and the camera FOV / aspect. */
+	void RefreshBounds();
+	/** Finds a spot for target SelfIndex (radius R): inside the bounds, clear of other active targets. */
+	bool FindSpawnPoint(int32 SelfIndex, double Radius, bool bGrid, const FVector* Avoid, FVector& Out) const;
+	/** Puts target Index on a fresh spot and shows it (pop-in). Returns false if no spot was found (retried next tick). */
+	bool TryPlace(int32 Index, bool bAvoidOld);
+	/** Retries every target that is waiting for a spot. */
+	void RetryPlacements();
+	/** After a hit: hides the target and puts it on a new spot (retried next tick if none is free). */
+	void RespawnTarget(AGETargetSphere* Target);
+	/** Checks the rules on all active targets. Returns an empty string if everything is fine. */
+	FString ValidateTargets(int32 ExpectedActive) const;
+	/** How many targets must be on screen right now in the current mode. */
+	int32 GetExpectedActiveCount() const;
+	void DrawDebug() const;
 	void PickNewTrackingDirection(AGETargetSphere* Target);
 	void UpdateCountdown(float DeltaTime);
 	void UpdateTracking(float DeltaTime);

@@ -258,3 +258,10 @@ Build files
 - Pause (Tab) is new: Resume / Restart (aim rounds only) / Settings / Main Menu. Pause freezes aim rounds via AGETargetManager::SetPaused; Training Center bots are not frozen.
 - Esc is also bound to Back, but Play-In-Editor swallows it, so Tab is the documented key.
 - Info card on the main menu is 260 high (legacy 200/420) so all entries share one layout.
+
+## FIX3 (start level + aim region)
+
+- [x] Game opens in `Content/RayShot/Lvl_RayShot` (EditorStartupMap + GameDefaultMap), starts on the Main Menu (see docs/FIX3_REPORT.md)
+- [x] Single playable region from `AGEArena::GetPlayRegion()`; `AGETargetManager::RefreshBounds()` builds `FGEAimBounds`; all four modes use it
+- [x] No overlap, nothing touching the wall, count kept (retry next tick); `ge.aim.debug` and `ge.aim.selftest` added; headless selftest ALL PASS
+- [ ] Visual check of the menu start, frame proportions and pop-in (not done headlessly)

@@ -19,6 +19,14 @@ static const float ArenaHalfWidth = 1000.0f;
 static const float ArenaHeight = 900.0f;
 static const float ArenaWallThickness = 20.0f;
 
+// ---------- the glowing frame on the back wall (the playable region, see GetPlayRegion) ----------
+// Centered a bit above the eye so it sits in the middle of the view at every supported FOV.
+static const float FrameInnerHalfW = 440.0f;
+static const float FrameInnerHalfH = 240.0f;
+static const float FrameCenterZ = 260.0f;
+static const float FrameStrip = 6.0f;      // bar thickness
+static const float FrameXInset = 4.0f;     // frame plane sits this far in front of the wall
+
 AGEArena::AGEArena()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -72,17 +80,15 @@ void AGEArena::BeginPlay()
 		AddBox(FVector(ArenaXMax - Strip, Y, ArenaHeight * 0.5f), FVector(Strip, Strip, ArenaHeight), PinkNeon, true);
 	}
 
-	// a glowing frame on the back wall around the target zone
-	// (targets are centered at Y = 0, Z = 320)
-	const float FrameX = ArenaXMax - 4.0f;
-	const float FrameHalfW = 460.0f;
-	const float FrameBottom = 30.0f;
-	const float FrameTop = 610.0f;
-	const float FrameMidZ = (FrameBottom + FrameTop) * 0.5f;
-	AddBox(FVector(FrameX, 0, FrameTop),    FVector(Strip, FrameHalfW * 2, Strip), CyanNeon, true);
-	AddBox(FVector(FrameX, 0, FrameBottom), FVector(Strip, FrameHalfW * 2, Strip), CyanNeon, true);
-	AddBox(FVector(FrameX, -FrameHalfW, FrameMidZ), FVector(Strip, Strip, FrameTop - FrameBottom), CyanNeon, true);
-	AddBox(FVector(FrameX,  FrameHalfW, FrameMidZ), FVector(Strip, Strip, FrameTop - FrameBottom), CyanNeon, true);
+	// a glowing frame on the back wall around the target zone; its INNER size is the playable region
+	const float FrameX = ArenaXMax - FrameXInset;
+	const float BarOffsetW = FrameInnerHalfW + FrameStrip * 0.5f;
+	const float BarOffsetH = FrameInnerHalfH + FrameStrip * 0.5f;
+	const float SideLength = FrameInnerHalfH * 2 + FrameStrip * 2;
+	AddBox(FVector(FrameX, 0, FrameCenterZ + BarOffsetH), FVector(Strip, FrameInnerHalfW * 2 + FrameStrip * 2, Strip), CyanNeon, true);
+	AddBox(FVector(FrameX, 0, FrameCenterZ - BarOffsetH), FVector(Strip, FrameInnerHalfW * 2 + FrameStrip * 2, Strip), CyanNeon, true);
+	AddBox(FVector(FrameX, -BarOffsetW, FrameCenterZ), FVector(Strip, Strip, SideLength), CyanNeon, true);
+	AddBox(FVector(FrameX,  BarOffsetW, FrameCenterZ), FVector(Strip, Strip, SideLength), CyanNeon, true);
 
 	// =================== floor grid ===================
 	const FLinearColor GridColor = GEStyle::Glow(GEStyle::GetTheme(GEStyle::EGETheme::Cyan).AccentDim, 0.5f);
@@ -109,7 +115,7 @@ void AGEArena::BeginPlay()
 	AddLight(FVector(800,  -500, 850), CoolWhite, 80.0f, 1800.0f, true);
 	AddLight(FVector(800,   500, 850), CoolWhite, 80.0f, 1800.0f, true);
 	// soft cyan wash on the back wall
-	AddLight(FVector(1150, 0, 320), GEStyle::Cyan, 30.0f, 800.0f, false);
+	AddLight(FVector(1150, 0, FrameCenterZ), GEStyle::Cyan, 30.0f, 800.0f, false);
 
 	// Stage B4: a faint haze so the far wall fades into the dark
 	if (UExponentialHeightFogComponent* Fog = NewObject<UExponentialHeightFogComponent>(this, TEXT("GE_Haze")))
@@ -216,4 +222,16 @@ void AGEArena::SetAimLookEnabled(bool bEnabled)
 	{
 		PostProcess->bEnabled = bEnabled;
 	}
+}
+
+FGEPlayRegion AGEArena::GetPlayRegion() const
+{
+	const FVector Origin = GetActorLocation();
+	FGEPlayRegion Region;
+	Region.Center = Origin + FVector(ArenaXMax - FrameXInset, 0.0, FrameCenterZ);
+	Region.HalfWidth = FrameInnerHalfW;
+	Region.HalfHeight = FrameInnerHalfH;
+	Region.WallX = Origin.X + ArenaXMax;
+	Region.ViewerXY = FVector(Origin.X, Origin.Y, 0.0);
+	return Region;
 }

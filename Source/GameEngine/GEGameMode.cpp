@@ -22,24 +22,29 @@ void AGEGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Spawn a few test dummies in front of the first PlayerStart (intro room only).
+	// The aim arena + Training Center are built in every level that has a PlayerStart (RayShot level and
+	// the old intro room). The Phase 2 test dummies only appear in the intro room.
 	UWorld* World = GetWorld();
-	if (!World || !World->GetMapName().Contains(TEXT("Lvl_IntroRoom")))
+	if (!World)
 	{
 		return;
 	}
+	const bool bIntroRoom = World->GetMapName().Contains(TEXT("Lvl_IntroRoom"));
 	for (TActorIterator<APlayerStart> It(World); It; ++It)
 	{
 		const FTransform T = It->GetActorTransform();
-		for (const FVector& Offset : DummyOffsets)
+		if (bIntroRoom)
 		{
-			// Offsets are relative to the start; Z is lowered ~90 cm so the dummy's feet touch the floor.
-			FVector Loc = T.TransformPositionNoScale(Offset);
-			Loc.Z = T.GetLocation().Z - 90.0f;
-			const FRotator FaceStart = (T.GetLocation() - Loc).Rotation();
-			FActorSpawnParameters Params;
-			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			World->SpawnActor<AGETargetDummy>(AGETargetDummy::StaticClass(), Loc, FRotator(0, FaceStart.Yaw, 0), Params);
+			for (const FVector& Offset : DummyOffsets)
+			{
+				// Offsets are relative to the start; Z is lowered ~90 cm so the dummy's feet touch the floor.
+				FVector Loc = T.TransformPositionNoScale(Offset);
+				Loc.Z = T.GetLocation().Z - 90.0f;
+				const FRotator FaceStart = (T.GetLocation() - Loc).Rotation();
+				FActorSpawnParameters Params;
+				Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				World->SpawnActor<AGETargetDummy>(AGETargetDummy::StaticClass(), Loc, FRotator(0, FaceStart.Yaw, 0), Params);
+			}
 		}
 		// Training Center: built far away (decision: no new .umap without the editor). Press T to go there.
 			const FVector Far(T.GetLocation().X, T.GetLocation().Y + TrainingCenterOffsetY, T.GetLocation().Z - 90.0f);

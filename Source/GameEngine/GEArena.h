@@ -11,6 +11,19 @@
 class UStaticMesh;
 class UMaterialInterface;
 
+/**
+ * The glowing frame on the back wall = the ONE source of truth for where aim targets may appear.
+ * The arena is never rotated: +X is forward (towards the wall), +Y right, +Z up. All values are world space.
+ */
+struct FGEPlayRegion
+{
+	FVector Center = FVector::ZeroVector;   // middle of the frame, on the frame plane
+	double HalfWidth = 0.0;                 // INNER half width (Y) of the frame
+	double HalfHeight = 0.0;                // INNER half height (Z) of the frame
+	double WallX = 0.0;                     // world X of the wall face the targets must stay in front of
+	FVector ViewerXY = FVector::ZeroVector; // where the player's eye is horizontally (the pad), Z unused
+};
+
 UCLASS()
 class GAMEENGINE_API AGEArena : public AActor
 {
@@ -25,6 +38,9 @@ public:
 	 * the target manager switches it on while an aim mode is active.
 	 */
 	void SetAimLookEnabled(bool bEnabled);
+
+	/** The playable region = the inside of the glowing frame (see FGEPlayRegion). */
+	FGEPlayRegion GetPlayRegion() const;
 
 protected:
 	virtual void BeginPlay() override;
