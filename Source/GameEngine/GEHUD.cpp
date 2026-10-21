@@ -5,6 +5,7 @@
 #include "GEWeaponComponent.h"
 #include "GETrainingManager.h"
 #include "GEFlickTypes.h"
+#include "GECoachTypes.h"
 #include "GameFramework/PlayerController.h"
 
 // ---------------------------------------------------------------------------
@@ -147,6 +148,68 @@ void AGEHUD::DrawTrainingMenu(UGETrainingManager& Manager)
 	if (Manager.GetMode() == EGETrainingMode::Flick && !Manager.IsSessionRunning() && Manager.HasFlickSummary())
 	{
 		DrawFlickResults(Manager, FMath::Min(PX + PanelW + 10.0f, Canvas->ClipX - 440.0f), PY);
+	}
+
+	// Phase 5: coach panel on the left of the menu, shown after any finished session.
+	if (!Manager.IsSessionRunning() && Manager.HasCoachReport())
+	{
+		DrawCoachPanel(Manager, FMath::Max(PX - 450.0f, 10.0f), PY);
+	}
+}
+
+float AGEHUD::DrawWrappedText(const FString& Text, const FLinearColor& Color, float X, float Y, float MaxWidth)
+{
+	TArray<FString> Words;
+	Text.ParseIntoArray(Words, TEXT(" "), true);
+	FString Line;
+	float LineH = 14.0f;
+	for (const FString& Word : Words)
+	{
+		const FString Test = Line.IsEmpty() ? Word : Line + TEXT(" ") + Word;
+		float TW = 0.0f;
+		GetTextSize(Test, TW, LineH, GEngine->GetSmallFont(), 1.0f);
+		if (TW > MaxWidth && !Line.IsEmpty())
+		{
+			DrawText(Line, Color, X, Y, GEngine->GetSmallFont());
+			Y += LineH + 2.0f;
+			Line = Word;
+		}
+		else
+		{
+			Line = Test;
+		}
+	}
+	if (!Line.IsEmpty())
+	{
+		DrawText(Line, Color, X, Y, GEngine->GetSmallFont());
+		Y += LineH + 2.0f;
+	}
+	return Y;
+}
+
+void AGEHUD::DrawCoachPanel(UGETrainingManager& Manager, float X, float Y)
+{
+	const FGECoachReport& R = Manager.GetCoachReport();
+	const float W = 440.0f;
+	const float TextW = W - 28.0f;
+	DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.9f), X, Y, W, 570.0f);
+	DrawText(TEXT("AI COACH"), FLinearColor::White, X + 14.0f, Y + 10.0f, GEngine->GetMediumFont(), 1.2f);
+	float LY = Y + 44.0f;
+
+	DrawText(TEXT("Top 3 tips"), FLinearColor::Yellow, X + 14.0f, LY, GEngine->GetSmallFont());
+	LY += 22.0f;
+	for (int32 i = 0; i < R.Tips.Num(); ++i)
+	{
+		LY = DrawWrappedText(FString::Printf(TEXT("%d. %s"), i + 1, *R.Tips[i].Text), FLinearColor(0.4f, 1.0f, 0.5f), X + 14.0f, LY, TextW);
+		LY += 10.0f;
+	}
+	LY += 8.0f;
+	DrawText(TEXT("Trends"), FLinearColor::Yellow, X + 14.0f, LY, GEngine->GetSmallFont());
+	LY += 22.0f;
+	for (const FString& Line : R.Trends)
+	{
+		LY = DrawWrappedText(Line, FLinearColor::White, X + 14.0f, LY, TextW);
+		LY += 4.0f;
 	}
 }
 

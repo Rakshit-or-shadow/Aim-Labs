@@ -6,10 +6,12 @@
 #include "GETrainingTypes.h"
 #include "GETrainingCenter.h"
 #include "GEFlickTypes.h"
+#include "GECoachTypes.h"
 #include "GETrainingManager.generated.h"
 
 class UGEFlickTracker;
 class UGESaveGame;
+class UGECoach;
 class AGEBot;
 class AGECharacter;
 class UGEWeaponComponent;
@@ -135,6 +137,11 @@ public:
 	/** Sets the scale from the last flick suggestion. */
 	void ApplyFlickSuggestion();
 
+	// ---- Phase 5: AI Coach ----
+	/** Tips + trends for the last finished session (valid when HasCoachReport()). */
+	const FGECoachReport& GetCoachReport() const { return CoachReport; }
+	bool HasCoachReport() const { return CoachReport.bValid; }
+
 	/** Display names. */
 	static FString ModeToString(EGETrainingMode M);
 
@@ -157,6 +164,9 @@ private:
 	void SpawnNextFlickTarget(float Now);
 	void FinishSession();	// builds the flick summary and saves the session record
 	void SaveProfile();
+	/** Phase 5: runs the coach when a session stops. */
+	UFUNCTION()
+	void HandleSessionStopped();
 
 	void BindToWeapon();
 	void UnbindFromWeapon();
@@ -176,6 +186,12 @@ private:
 	TObjectPtr<UGESaveGame> SaveGame;
 	UPROPERTY(Transient)
 	TObjectPtr<AGEBot> CurrentFlickTarget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UGECoach> Coach;
+	FGECoachReport CoachReport;
+	/** True when FinishSession saved a record for the session that just stopped. */
+	bool bRecordSaved = false;
 
 	FGEFlickSettings FlickSettings;
 	FGEFlickSummary LastFlickSummary;

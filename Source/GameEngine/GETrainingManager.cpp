@@ -5,6 +5,7 @@
 #include "GEWeaponComponent.h"
 #include "GEFlickTracker.h"
 #include "GESaveGame.h"
+#include "GECoach.h"
 #include "GameFramework/Character.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -37,6 +38,10 @@ void UGETrainingManager::Initialize(FSubsystemCollectionBase& Collection)
 		SensitivityScale = FMath::Clamp(SaveGame->SensitivityScale, GESensitivity::MinScale, GESensitivity::MaxScale);
 		MouseDpi = FMath::Clamp(SaveGame->MouseDpi, GESensitivity::MinDpi, GESensitivity::MaxDpi);
 	}
+
+	// Phase 5: the offline coach runs whenever a session stops.
+	Coach = NewObject<UGECoach>(this);
+	OnSessionStopped.AddDynamic(this, &UGETrainingManager::HandleSessionStopped);
 
 	// Difficulty presets (index = EGEDifficulty). Tune the numbers here.
 	Presets.Reset();
@@ -164,6 +169,17 @@ void UGETrainingManager::HandleShotHit(AActor* Target, EGEHitZone Zone, float Da
 		return;
 	}
 	bPendingHit = true;
+
+	// Phase 5: bucket this bullet hit by distance (about 10 / 20 / 30 / 40 m) for the coach.
+	if (const ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+	{
+		const float Meters = FVector::Dist2D(Player->GetActorLocation(), Bot->GetActorLocation()) / 100.0f;
+		const int32 Bucket = FMath::Clamp(FMath::RoundToInt(Meters / GECoachTuning::BucketSizeMeters) - 1, 0, GENumDistanceBuckets - 1);
+		Stats.HitsByDistance.SetNumZeroed(GENumDistanceBuckets);
+		Stats.HeadHitsByDistance.SetNumZeroed(GENumDistanceBuckets);
+		Stats.HitsByDistance[Bucket]++;
+		if (Zone == EGEHitZone::Head) { Stats.HeadHitsByDistance[Bucket]++; }
+	}
 	if (FlickTracker && Bot == CurrentFlickTarget)
 	{
 		FlickTracker->NotifyHit(Now); // flick: time to hit
@@ -193,17 +209,25 @@ void UGETrainingManager::HandleShotFired(int32 WeaponIndexFired, bool bFirstShot
 	}
 	if (bSessionRunning)
 	{
+		// Phase 5: was the player moving fast enough to be inaccurate?
+		const ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+		const bool bMoving = Player && Player->GetVelocity().Size2D() > GECoachTuning::MovingSpeed;
+
 		Stats.Shots++;
+		if (bMoving) { Stats.ShotsMoving++; }
 		if (bPendingHit)
 		{
 			Stats.Hits++;
+			if (bMoving) { Stats.HitsMoving++; }
 		}
 		if (bFirstShot)
 		{
 			Stats.FirstShots++;
+			if (bMoving) { Stats.FirstShotsMoving++; }
 			if (bPendingHit)
 			{
 				Stats.FirstShotHits++;
+				if (bMoving) { Stats.FirstShotHitsMoving++; }
 			}
 		}
 	}
@@ -241,6 +265,10 @@ void UGETrainingManager::StartSession()
 {
 	DestroyAllBots();
 	Stats = FGETrainingStats();
+	Stats.HitsByDistance.SetNumZeroed(GENumDistanceBuckets);
+	Stats.HeadHitsByDistance.SetNumZeroed(GENumDistanceBuckets);
+	CoachReport = FGECoachReport();
+	bRecordSaved = false;
 	bPendingHit = false;
 	bSessionRunning = true;
 
@@ -560,8 +588,27 @@ void UGETrainingManager::FinishSession()
 		Record.bHasFlick = bHasFlickSummary;
 		if (bHasFlickSummary) { Record.Flick = LastFlickSummary; }
 		SaveGame->AddSession(Record);
+		bRecordSaved = true;
 	}
 	SaveProfile();
+}
+
+/** Phase 5: build the coach report from the session that was just saved plus the history. */
+void UGETrainingManager::HandleSessionStopped()
+{
+	CoachReport = FGECoachReport();
+	if (!Coach || !SaveGame || !bRecordSaved || SaveGame->GetSessions().Num() == 0)
+	{
+		return;
+	}
+	FGECoachInput Input;
+	Input.History = SaveGame->GetSessions(); // oldest first, latest is the last entry
+	Input.Latest = Input.History.Last();
+	if (Mode == EGETrainingMode::Flick && FlickTracker)
+	{
+		Input.FlickRecords = FlickTracker->GetRecords();
+	}
+	Coach->BuildReport(Input, CoachReport);
 }
 
 void UGETrainingManager::SaveProfile()

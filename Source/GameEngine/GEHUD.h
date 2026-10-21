@@ -67,6 +67,10 @@ private:
 	void DrawPopups(class UGETrainingManager& Manager);
 	/** Phase 4: per-direction table, overshoot and sensitivity suggestion. */
 	void DrawFlickResults(class UGETrainingManager& Manager, float X, float Y);
+	/** Phase 5: the coach panel (3 tips + trends) after any session. */
+	void DrawCoachPanel(class UGETrainingManager& Manager, float X, float Y);
+	/** Draws text word-wrapped to MaxWidth. Returns the Y below the last line. */
+	float DrawWrappedText(const FString& Text, const FLinearColor& Color, float X, float Y, float MaxWidth);
 	/** Draws a clickable button and registers its hit box. */
 	void DrawButton(const FString& Label, const FName& Name, float X, float Y, float W, float H, bool bSelected);
 

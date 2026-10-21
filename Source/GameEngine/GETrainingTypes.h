@@ -3,6 +3,9 @@
 #include "CoreMinimal.h"
 #include "GETrainingTypes.generated.h"
 
+/** Number of distance buckets for the coach (10 / 20 / 30 / 40 m). */
+constexpr int32 GENumDistanceBuckets = 4;
+
 /** What the bots do during a training session (Phase 3). Flick is reserved for Phase 4. */
 UENUM(BlueprintType)
 enum class EGETrainingMode : uint8
@@ -84,6 +87,22 @@ struct FGETrainingStats
 	/** Length of the session so far (seconds). */
 	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
 	float Duration = 0.0f;
+
+	// ---- Phase 5 (coach). New fields default to 0 / empty, so old save files still load. ----
+	/** Trigger pulls / hits / first shots / first-shot hits made while the player was moving (see GECoachTuning::MovingSpeed). */
+	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
+	int32 ShotsMoving = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
+	int32 HitsMoving = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
+	int32 FirstShotsMoving = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
+	int32 FirstShotHitsMoving = 0;
+	/** Bullet hits on bots per distance bucket (index 0..3 = about 10 / 20 / 30 / 40 m) and how many were headshots. Empty in old saves. */
+	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
+	TArray<int32> HitsByDistance;
+	UPROPERTY(BlueprintReadOnly, Category = "GE|Stats")
+	TArray<int32> HeadHitsByDistance;
 
 	/** 0-100 */
 	float GetHeadshotPercent() const { return Kills > 0 ? 100.0f * HeadshotKills / Kills : 0.0f; }
