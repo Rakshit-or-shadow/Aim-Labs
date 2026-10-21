@@ -109,3 +109,20 @@ Put files here (all optional, original art only):
   - Build number shown in fluff is the constant FGEUIKit::BuildNumber (1021).
   - Glitch is faked with colour-split bands (the already-drawn frame cannot be offset on a Canvas).
   - NumSettings 5 -> 7 makes the Settings card taller (about 860 of 1080 px).
+
+## Stage B4: Apply cyberpunk UI to all screens
+
+- Status: DONE (built + headless launch OK; nothing visually verified, nullrhi draws nothing)
+- Summary:
+  - GEHUDScreens.cpp / GEHUD.cpp: Main Menu (tag, glowing RAYSHOT, nav items, info card, chrome), Mode Select (4 diamond tiles, yellow bests, description card), Settings (5 numbered cards MOUSE/VIDEO/AUDIO/CROSSHAIR/INTERFACE, sliders, toggles, theme/crosshair swatches, live preview, tabs + page indicator), Results (count-up mono score, S/A/B/C/D rank, yellow NEW PERSONAL BEST banner, stat rows, coach tip cards, Primary/Secondary buttons), Pause (nav items), aim HUD (timer, stats, mode banner, low-time danger + one glitch), weapon HUD (ammo, reload bar, slots), hit marker with headshot/kill glow, damage numbers, Training Center menu, Flick results and Coach panel.
+  - Hit testing/flow kept: DrawMenuButton/DrawSlider replaced by HitTestItem + kit drawing; Training menu still uses AddHitBox with the same names.
+  - 3D: arena and Training Center neon strips use theme colors, exponential-height haze added to both, Training Center walls/floor darkened with glowing pad/portal/markers. Arena post process (bloom, fringe, vignette, no motion blur) was already set and is unchanged.
+- Build result: Succeeded (first attempt). Headless -game -nullrhi launch of Lvl_IntroRoom ran ~70 s with no crash/fatal; only unrelated engine-plugin noise (BP_StartupLocation editor-subsystem note, ToolsetRegistry python, an ensure at forced shutdown from LocalizableMessage).
+- Commit: see git log ("Stage B4: apply cyberpunk UI to all screens")
+- Manual steps: play and check every screen visually (text fit at your resolution, Settings grid fits 1080p, fog density not too heavy, Training Center walls not too dark; tweak FogDensity in GEArena.cpp/GETrainingCenter.cpp).
+- Decisions:
+  - UI uses the active theme only; per-mode colors (Cyan/Orange/Green/Purple) are still used for targets in the 3D scene, not the UI.
+  - Rank thresholds are placeholders in GEHUDScreens.cpp (AimRank/PercentRank); Training/Flick rank uses accuracy %.
+  - Interface card holds UI theme, scanlines and glitch; Video holds FOV.
+  - Settings mouse click still increments, right-click decrements (sliders are not drag-able).
+  - Debug F3 speed readout left in the old plain style.
