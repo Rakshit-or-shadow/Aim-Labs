@@ -1,0 +1,41 @@
+# === Unreal Engine ===
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+.vs/
+*.sln
+Content/Developers/
+Content/Collections/
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.suo
+
+# === Claude Code Game Studios (local/ephemeral) ===
+project.local.yaml
+.claude/settings.local.json
+CLAUDE.local.md
+production/session-logs/
+production/session-state/
+.scratch/
+.claude/agent-memory/
+.claude/worktrees/
+docs/consistency-failures.md
+
+# === IDE and OS ===
+.idea/
+.vscode/settings.json
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# === Secrets and Environment ===
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+secrets.json
