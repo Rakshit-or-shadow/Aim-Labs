@@ -16,3 +16,4 @@
 - Phase 2: DONE (commit d6f49c2) - 5 weapons (Sidekick, Rattler, Longarm, Eagle Eye, Scatter), RayTraceMath hit detection, viewmodel, flash, tracer, sounds, HUD. Build: Succeeded. Manual steps: none (untested in play).
 - Phase 3: DONE (commit 78d2355) - Training Center, AGEBot (static/strafe/peek, Easy/Medium/Hard), stats, M menu, T teleport. Build: Succeeded (2nd attempt). Manual steps: none (untested in play).
 - Phase 4: DONE (commit 0dc9b8f) - Flick mode, UGEFlickTracker, per-direction results, sensitivity suggestion + cm/360, UGESaveGame history. Build: Succeeded. Manual steps: see above.
+- Phase 5: DONE (commit 2b0324d) - UGECoach offline rule-based (3 tips + trends), IGECoachProvider (LLM TODO only), HUD AI COACH panel. Build: Succeeded. Manual steps: none (untested in play).
