@@ -187,6 +187,19 @@ void AGECharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(SpeedReadoutAction, ETriggerEvent::Started, this, &AGECharacter::ToggleSpeedReadout);
 		EIC->BindAction(TeleportAction, ETriggerEvent::Started, this, &AGECharacter::TeleportPressed);
 		EIC->BindAction(MenuAction, ETriggerEvent::Started, this, &AGECharacter::MenuPressed);
+
+		// Weapons: fire (hold), aim (hold), reload, mouse wheel, slots 1-5.
+		EIC->BindAction(FireAction, ETriggerEvent::Started, this, &AGECharacter::FirePressed);
+		EIC->BindAction(FireAction, ETriggerEvent::Completed, this, &AGECharacter::FireReleased);
+		EIC->BindAction(AimAction, ETriggerEvent::Started, this, &AGECharacter::AimPressed);
+		EIC->BindAction(AimAction, ETriggerEvent::Completed, this, &AGECharacter::AimReleased);
+		EIC->BindAction(ReloadAction, ETriggerEvent::Started, this, &AGECharacter::ReloadPressed);
+		EIC->BindAction(WheelUpAction, ETriggerEvent::Started, this, &AGECharacter::WheelUp);
+		EIC->BindAction(WheelDownAction, ETriggerEvent::Started, this, &AGECharacter::WheelDown);
+		for (int32 i = 0; i < WeaponSlotActions.Num(); ++i)
+		{
+			EIC->BindActionValueLambda(WeaponSlotActions[i], ETriggerEvent::Started, [this, i](const FInputActionValue&) { SelectSlot(i); });
+		}
 	}
 }
 
