@@ -52,3 +52,15 @@ Unattended second overnight job. One entry per stage: status, summary, build, co
   - Crosshair always uses the saved color setting; Phase 2 spread widening kept. Default crosshair size/gap changed to the legacy 9/5 px.
   - Possible risk: Tab in GameAndUI input mode may be consumed by Slate focus navigation in some setups; if Tab does nothing in menus, use Enter/mouse and tell me.
 - Old RayShot folder safe to delete? NOT YET. Missing: retained screenshot evidence for the ported screens/modes (checklist section 10, last line) and an in-editor play-through, which could not be done unattended. Code, assets-free systems, settings and archive (Legacy/RayShot) are all in place.
+
+## Extra art that would make it better (from Stage B1)
+
+Put files here (all optional, original art only):
+- ArtSource\FigmaUI\backgrounds\city_dark_1920x1080.png (plus a 4K version): dark red-hazed cityscape or range backdrop for the Main Menu (none supplied).
+- ArtSource\FigmaUI\backgrounds\menu_alt.png: darker/blurred backdrop for Settings and Results.
+- ArtSource\FigmaUI\icons\ (SVG or white-on-transparent PNG, 16/32px): chevrons, close, plus, check, warning, lock, list, user, mail, signal, crosshair, menu, diamond, trophy, clock, replay.
+- ArtSource\FigmaUI\icons\modes\: one ~128px icon per aim mode, Training Center, Flick Optimizer, Free Roam (for diamond tiles).
+- ArtSource\Logo\rayshot_logo.svg and rayshot_logo_1024.png (transparent): wordmark for Main Menu and splash.
+- ArtSource\Fonts\: Rajdhani (Medium, SemiBold) and Share Tech Mono TTFs (OFL, Google Fonts) if not already present.
+- ArtSource\FigmaUI\screens\: more kit pages (HUD, settings, pause, results) if they exist; only 5 pages were provided.
+- ArtSource\Audio\ui\: short UI sounds (hover, click, back, personal-best sting).
