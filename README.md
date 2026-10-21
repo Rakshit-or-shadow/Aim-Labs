@@ -1,10 +1,21 @@
-# GameEngine - Tactical Aim Trainer (UE 5.8, C++)
+# RAYSHOT / GameEngine - Tactical Aim Trainer (UE 5.8, C++)
 
 A first-person aim trainer built on the Unreal Engine 5.8 First Person template.
 All new code is C++ with the `GE` prefix. Hit detection never uses line traces:
-every shot is a ray tested against sphere hitboxes with `RayTraceMath::DoesIntersect`.
+every shot is a ray tested against sphere hitboxes with `RayTraceMath::DoesIntersect`
+(the ray tracer math comes from the author's own C ray tracer).
+
+Status: everything builds, and a headless launch does not crash, but nothing has been seen on screen yet
+(see docs/OVERNIGHT2_REPORT.md for the test list).
 
 ## Features
+
+- 4 aim modes ported from the old RayShot project: Gridshot (60 s, 3 targets on a 5x5 grid), Microshot (60 s, one tiny target),
+  Tracking (45 s, keep the crosshair on a moving target, no clicking) and Reflex (10 targets, reaction times).
+  3-2-1-GO countdown, score popups, hit bursts, personal bests, S/A/B/C/D rank on the results screen.
+- Cyberpunk UI drawn with the HUD canvas (GEUIKit): chamfered panels, nav items, diamond tiles, sliders, toggles,
+  scanline and glitch overlays, 4 colour themes (Red, Cyan, Yellow, Green, switchable in Settings).
+- Settings (saved in `UGESaveGame`): sensitivity, field of view, volume, crosshair colour, UI theme, scanlines, screen glitch.
 
 - Tactical movement: fast run, walk, crouch, low air control, snappy counter-strafing.
 - 5 original weapons: Sidekick (sidearm), Rattler (SMG), Longarm (rifle), Eagle Eye (scoped marksman), Scatter (shotgun).
@@ -19,7 +30,15 @@ every shot is a ray tested against sphere hitboxes with `RayTraceMath::DoesInter
   with cm/360, saved session history (UGESaveGame).
 - Offline AI Coach: 3 specific tips and trends across sessions after each session (rule based, no internet).
 
+## Screens
+
+Main Menu, Mode Select (4 aim modes with bests), Settings, Playing (aim HUD), Results, Pause, Training Center menu,
+Flick Optimizer results, AI Coach panel. Debug: console `ge.ui.gallery` draws every UI component;
+`ge.aim.start <0-3 or name>` and `ge.aim.stop` start/leave an aim mode.
+
 ## Controls
+
+Gameplay (Free Roam, Training Center):
 
 | Input | Action |
 |---|---|
@@ -37,7 +56,18 @@ every shot is a ray tested against sphere hitboxes with `RayTraceMath::DoesInter
 | T | Teleport to the Training Center / back |
 | M | Open/close the Training Center menu (mouse is freed; click buttons) |
 
-Menu: choose mode, difficulty, weapon, START/STOP, view stats, change sensitivity (+/-) and mouse DPI,
+Menus (Main Menu, Mode Select, Settings, Results, Pause):
+
+| Input | Action |
+|---|---|
+| W / S or Up / Down | Move selection |
+| A / D or Left / Right | Change a setting value |
+| Enter or Space | Confirm |
+| Left click / right click | Select, confirm, or increase / decrease a setting (sliders are not draggable) |
+| Tab (or Esc outside the editor) | Back / pause (Esc is swallowed by Play-In-Editor) |
+| R | Restart the round (Playing) or Play Again (Results) |
+
+Training Center menu: choose mode, difficulty, weapon, START/STOP, view stats, change sensitivity (+/-) and mouse DPI,
 view Flick results and the AI Coach panel after a session.
 
 ## How to build
@@ -49,6 +79,13 @@ Close the Unreal Editor first, then run (UE 5.8 installed in the default locatio
 ```
 
 Then open `GameEngine.uproject`. The startup map is `/Game/DemoTemplate/_Core/Lvl_IntroRoom`.
+
+## Credits
+
+- Hit detection math derives from the author's own C ray tracer (ray-sphere intersection in `RayTraceMath.h`).
+- UI layout and style use a Figma UI kit as design inspiration only; no Figma assets are shipped.
+- Fonts: Rajdhani and Share Tech Mono (SIL Open Font License, texts in `ArtSource/Fonts`).
+- All weapon, bot and level names are original. Legacy project archived in `Legacy/RayShot`.
 
 ## Project structure (Source/GameEngine)
 
@@ -71,7 +108,11 @@ Then open `GameEngine.uproject`. The startup map is `/Game/DemoTemplate/_Core/Lv
 | GEFlickTypes.h / GEFlickTracker | Flick records, path sampling, overshoot analysis, sensitivity suggestion |
 | GESaveGame | Saved profile: sensitivity, DPI, session history |
 | GECoachTypes.h / GECoachProvider.h / GECoach | Rule-based coach; `IGECoachProvider` has a TODO for a future LLM provider |
-| GEHUD | Crosshair, ammo, hit marker, scope, popups, menu, flick and coach panels |
+| GEHUD / GEHUDScreens | Crosshair, ammo, hit marker, popups, all screens and the screen flow, input/cursor state |
+| GEAimTypes.h / GEAimModes.h | Aim mode and screen enums, per-mode rules |
+| GETargetManager / GETargetSphere / GEHitBurst / GEArena | Aim mode logic, reusable targets, hit effect, arena room |
+| GEStyle.h / GEUIKit | Colour themes, type scale, procedural UI component kit |
+| GESounds.h | Procedural UI/aim tones |
 
 ## Notes
 
