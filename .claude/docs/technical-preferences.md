@@ -10,31 +10,31 @@
 
 ## Engine & Language
 
-- **Engine**: [TO BE CONFIGURED — run /setup-engine]
-- **Language**: [TO BE CONFIGURED]
-- **Rendering**: [TO BE CONFIGURED]
-- **Physics**: [TO BE CONFIGURED]
+- **Engine**: Unreal Engine 5.8
+- **Language**: C++ (Blueprints for tuning and prototyping)
+- **Rendering**: Lumen + Nanite (deferred)
+- **Physics**: Chaos (shots use custom ray-sphere math, not physics traces)
 
 ## Input & Platform
 
 <!-- Written by /setup-engine. Read by /ux-design, /ux-review, /test-setup, /team-ui, and /dev-story -->
 <!-- to scope interaction specs, test helpers, and implementation to the correct input methods. -->
 
-- **Target Platforms**: [TO BE CONFIGURED — e.g., PC, Console, Mobile, Web]
-- **Input Methods**: [TO BE CONFIGURED — e.g., Keyboard/Mouse, Gamepad, Touch, Mixed]
-- **Primary Input**: [TO BE CONFIGURED — the dominant input for this game]
-- **Gamepad Support**: [TO BE CONFIGURED — Full / Partial / None]
-- **Touch Support**: [TO BE CONFIGURED — Full / Partial / None]
-- **Platform Notes**: [TO BE CONFIGURED — any platform-specific UX constraints]
+- **Target Platforms**: PC
+- **Input Methods**: Keyboard/Mouse
+- **Primary Input**: Keyboard/Mouse
+- **Gamepad Support**: None
+- **Touch Support**: None
+- **Platform Notes**: First-person aim trainer; all new C++ types prefixed `GE`.
 
 ## Naming Conventions
 
-- **Classes**: [TO BE CONFIGURED]
-- **Variables**: [TO BE CONFIGURED]
-- **Signals/Events**: [TO BE CONFIGURED]
-- **Files**: [TO BE CONFIGURED]
-- **Scenes/Prefabs**: [TO BE CONFIGURED]
-- **Constants**: [TO BE CONFIGURED]
+- **Classes**: Prefixed PascalCase (A/U/F/E); project types add `GE` (e.g. `AGECharacter`)
+- **Variables**: PascalCase; booleans `b` prefix
+- **Signals/Events**: PascalCase `On<Event>`
+- **Files**: Match class without prefix
+- **Scenes/Prefabs**: Levels/maps, PascalCase
+- **Constants**: SCREAMING_SNAKE (unverified)
 
 ## Performance Budgets
 
@@ -45,7 +45,7 @@
 
 ## Testing
 
-- **Framework**: [TO BE CONFIGURED]
+- **Framework**: Unreal Automation Spec
 - **Minimum Coverage**: [TO BE CONFIGURED]
 - **Required Tests**: Balance formulas, gameplay systems, networking (if applicable)
 
@@ -70,12 +70,12 @@
 <!-- Read by /code-review, /architecture-decision, /architecture-review, and team skills -->
 <!-- to know which specialist to spawn for engine-specific validation. -->
 
-- **Primary**: [TO BE CONFIGURED — run /setup-engine]
-- **Language/Code Specialist**: [TO BE CONFIGURED]
-- **Shader Specialist**: [TO BE CONFIGURED]
-- **UI Specialist**: [TO BE CONFIGURED]
-- **Additional Specialists**: [TO BE CONFIGURED]
-- **Routing Notes**: [TO BE CONFIGURED]
+- **Primary**: unreal-specialist
+- **Language/Code Specialist**: unreal-specialist (C++); ue-blueprint-specialist (Blueprint graphs)
+- **Shader Specialist**: unreal-specialist
+- **UI Specialist**: ue-umg-specialist
+- **Additional Specialists**: ue-gas-specialist, ue-blueprint-specialist, ue-replication-specialist
+- **Routing Notes**: unreal-specialist for C++ architecture; ue-umg-specialist for UMG UI.
 
 ### File Extension Routing
 
@@ -84,9 +84,9 @@
 
 | File Extension / Type | Specialist to Spawn |
 |-----------------------|---------------------|
-| Game code (primary language) | [TO BE CONFIGURED] |
-| Shader / material files | [TO BE CONFIGURED] |
-| UI / screen files | [TO BE CONFIGURED] |
-| Scene / prefab / level files | [TO BE CONFIGURED] |
-| Native extension / plugin files | [TO BE CONFIGURED] |
+| Game code (.cpp, .h) | unreal-specialist |
+| Shader / material files | unreal-specialist |
+| UI / screen files | ue-umg-specialist |
+| Level files (.umap, .uasset) | unreal-specialist |
+| Plugin / module files | unreal-specialist |
 | General architecture review | Primary |

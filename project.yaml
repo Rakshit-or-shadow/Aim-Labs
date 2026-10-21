@@ -32,3 +32,33 @@ project:
 modes:
   rigor: minimal
   automation: guided
+
+engine:
+  name: "Unreal"
+  version: "5.8"
+  language: "C++"
+  rendering: "Lumen + Nanite (deferred)"
+  physics: "Chaos"
+  path: "C:/Program Files/Epic Games/UE_5.8"
+
+specialists:
+  code: "unreal-specialist"
+  shader: "unreal-specialist"
+  ui: "ue-umg-specialist"
+  additional: ["ue-gas-specialist", "ue-blueprint-specialist", "ue-replication-specialist"]
+
+naming:
+  classes: PascalCase
+  variables: PascalCase
+  constants: SCREAMING_SNAKE   # UNVERIFIED — not sourceable from
+                               # docs/engine-reference/unreal/; confirm before relying on it
+  signals: "PascalCase On<Event>"
+  files: PascalCase
+  scenes: PascalCase
+
+commands:
+  # TODO: confirm these for your UE version and project — adjust via /settings
+  build: '"C:/Program Files/Epic Games/UE_5.8/Engine/Build/BatchFiles/Build.bat" GameEngineEditor Win64 Development -Project="C:/Users/raksh/OneDrive/Documents/rayshot/GameEngine/GameEngine.uproject" -WaitMutex'
+  test: '"C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" "$(pwd -W 2>/dev/null || pwd)/GameEngine.uproject" -ExecCmds="Automation RunTests GameEngineGame.; Quit" -unattended -nullrhi -stdout -FullStdOutLogOutput'
+  run: '"C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe" "$(pwd -W 2>/dev/null || pwd)/GameEngine.uproject" -game -windowed -ResX=1280 -ResY=720'
+  smoke: '"C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" "$(pwd -W 2>/dev/null || pwd)/GameEngine.uproject" -game -nullrhi -unattended -stdout -ExecCmds="Quit"'
