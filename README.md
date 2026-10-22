@@ -17,13 +17,103 @@ Release notes: `docs/release/RELEASE_NOTES_v1.0.md`.
 
 ## Screenshots
 
-![Main menu](docs/screenshots/main-menu.png)
-![Gridshot](docs/screenshots/mode-gridshot.png)
-![Training Center](docs/screenshots/training-center.png)
-![Flick Optimizer](docs/screenshots/flick-optimizer.png)
-![Settings](docs/screenshots/settings.png)
+![Main menu with the neon arena behind it](docs/screenshots/hero/01-main-menu.png)
+*Main menu with the neon arena behind it*
 
-(Placeholders: the images are added to `docs/screenshots/` after capture.)
+![The arena from a wide angle](docs/screenshots/hero/02-arena.png)
+*The arena from a wide angle*
+
+![Gridshot in the Cyan theme](docs/screenshots/hero/03-gridshot-cyan.png)
+*Gridshot in the Cyan theme*
+
+![Tracking: the target turns green while the crosshair is on it](docs/screenshots/hero/04-tracking.png)
+*Tracking: the target turns green while the crosshair is on it*
+
+![Results with rank and personal best](docs/screenshots/hero/05-results.png)
+*Results with rank and personal best*
+
+![Eagle Eye scope view in the Training Center](docs/screenshots/hero/06-eagle-eye-scope.png)
+*Eagle Eye scope view in the Training Center*
+
+![Microshot: one tiny target](docs/screenshots/hero/07-microshot.png)
+*Microshot: one tiny target*
+
+![Results with the offline AI Coach](docs/screenshots/hero/08-ai-coach.png)
+*Results with the offline AI Coach*
+
+<details>
+<summary>Full gallery (68 screenshots)</summary>
+
+![01_main_menu_red](docs/screenshots/01_main_menu_red.jpg)
+![02_main_menu_selected_training](docs/screenshots/02_main_menu_selected_training.jpg)
+![03_main_menu_theme_cyan](docs/screenshots/03_main_menu_theme_cyan.jpg)
+![04_main_menu_theme_yellow](docs/screenshots/04_main_menu_theme_yellow.jpg)
+![05_main_menu_theme_green](docs/screenshots/05_main_menu_theme_green.jpg)
+![06_arena_wide_view](docs/screenshots/06_arena_wide_view.jpg)
+![07_mode_select_gridshot](docs/screenshots/07_mode_select_gridshot.jpg)
+![08_mode_select_microshot](docs/screenshots/08_mode_select_microshot.jpg)
+![09_mode_select_tracking](docs/screenshots/09_mode_select_tracking.jpg)
+![10_mode_select_reflex](docs/screenshots/10_mode_select_reflex.jpg)
+![11_settings_mouse_sensitivity](docs/screenshots/11_settings_mouse_sensitivity.jpg)
+![12_settings_video_fov](docs/screenshots/12_settings_video_fov.jpg)
+![13_settings_audio_volume](docs/screenshots/13_settings_audio_volume.jpg)
+![14_settings_crosshair_color](docs/screenshots/14_settings_crosshair_color.jpg)
+![15_settings_interface_theme](docs/screenshots/15_settings_interface_theme.jpg)
+![16_settings_interface_scanlines](docs/screenshots/16_settings_interface_scanlines.jpg)
+![17_settings_interface_glitch_off](docs/screenshots/17_settings_interface_glitch_off.jpg)
+![18_gridshot_countdown](docs/screenshots/18_gridshot_countdown.jpg)
+![19_gridshot_playing](docs/screenshots/19_gridshot_playing.jpg)
+![20_gridshot_pause_menu](docs/screenshots/20_gridshot_pause_menu.jpg)
+![21_gridshot_hud_theme_cyan](docs/screenshots/21_gridshot_hud_theme_cyan.jpg)
+![22_gridshot_hud_theme_yellow](docs/screenshots/22_gridshot_hud_theme_yellow.jpg)
+![23_gridshot_hud_theme_green](docs/screenshots/23_gridshot_hud_theme_green.jpg)
+![24_gridshot_results_new_best](docs/screenshots/24_gridshot_results_new_best.jpg)
+![25_microshot_playing](docs/screenshots/25_microshot_playing.jpg)
+![26_microshot_results](docs/screenshots/26_microshot_results.jpg)
+![27_tracking_playing](docs/screenshots/27_tracking_playing.jpg)
+![28_tracking_results](docs/screenshots/28_tracking_results.jpg)
+![29_reflex_waiting](docs/screenshots/29_reflex_waiting.jpg)
+![30_reflex_playing](docs/screenshots/30_reflex_playing.jpg)
+![31_reflex_results](docs/screenshots/31_reflex_results.jpg)
+![32_gridshot_results_no_new_best](docs/screenshots/32_gridshot_results_no_new_best.jpg)
+![33_mode_select_with_personal_bests](docs/screenshots/33_mode_select_with_personal_bests.jpg)
+![34_free_roam_standing](docs/screenshots/34_free_roam_standing.jpg)
+![35_pause_menu_free_roam](docs/screenshots/35_pause_menu_free_roam.jpg)
+![36_training_center_menu](docs/screenshots/36_training_center_menu.jpg)
+![37_training_center_menu_strafing_hard_scatter](docs/screenshots/37_training_center_menu_strafing_hard_scatter.jpg)
+![38_movement_standing](docs/screenshots/38_movement_standing.jpg)
+![39_movement_walking_speed_readout](docs/screenshots/39_movement_walking_speed_readout.jpg)
+![40_movement_running](docs/screenshots/40_movement_running.jpg)
+![41_movement_crouching](docs/screenshots/41_movement_crouching.jpg)
+![42_movement_jump_midair](docs/screenshots/42_movement_jump_midair.jpg)
+![43_weapon_sidekick_firing](docs/screenshots/43_weapon_sidekick_firing.jpg)
+![44_weapon_sidekick_ads](docs/screenshots/44_weapon_sidekick_ads.jpg)
+![45_weapon_sidekick_reload](docs/screenshots/45_weapon_sidekick_reload.jpg)
+![46_weapon_rattler_firing](docs/screenshots/46_weapon_rattler_firing.jpg)
+![47_weapon_rattler_ads](docs/screenshots/47_weapon_rattler_ads.jpg)
+![48_weapon_rattler_reload](docs/screenshots/48_weapon_rattler_reload.jpg)
+![49_weapon_longarm_firing](docs/screenshots/49_weapon_longarm_firing.jpg)
+![50_weapon_longarm_ads](docs/screenshots/50_weapon_longarm_ads.jpg)
+![51_weapon_longarm_reload](docs/screenshots/51_weapon_longarm_reload.jpg)
+![52_bot_killed_headshot](docs/screenshots/52_bot_killed_headshot.jpg)
+![53_weapon_eagle_eye_firing](docs/screenshots/53_weapon_eagle_eye_firing.jpg)
+![54_weapon_eagle_eye_ads](docs/screenshots/54_weapon_eagle_eye_ads.jpg)
+![55_weapon_eagle_eye_reload](docs/screenshots/55_weapon_eagle_eye_reload.jpg)
+![56_weapon_scatter_firing](docs/screenshots/56_weapon_scatter_firing.jpg)
+![57_weapon_scatter_ads](docs/screenshots/57_weapon_scatter_ads.jpg)
+![58_weapon_scatter_reload](docs/screenshots/58_weapon_scatter_reload.jpg)
+![59_training_menu_session_stats](docs/screenshots/59_training_menu_session_stats.jpg)
+![60_training_results_and_coach](docs/screenshots/60_training_results_and_coach.jpg)
+![61_training_menu_coach_panel](docs/screenshots/61_training_menu_coach_panel.jpg)
+![62_bots_strafing_hard](docs/screenshots/62_bots_strafing_hard.jpg)
+![63_bots_peek_hard](docs/screenshots/63_bots_peek_hard.jpg)
+![64_flick_optimizer_start](docs/screenshots/64_flick_optimizer_start.jpg)
+![65_flick_in_progress](docs/screenshots/65_flick_in_progress.jpg)
+![66_flick_results_and_coach](docs/screenshots/66_flick_results_and_coach.jpg)
+![67_flick_analysis_table](docs/screenshots/67_flick_analysis_table.jpg)
+![68_main_menu_final](docs/screenshots/68_main_menu_final.jpg)
+
+</details>
 
 ## How to play
 

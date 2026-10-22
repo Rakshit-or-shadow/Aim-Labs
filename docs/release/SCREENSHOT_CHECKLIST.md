@@ -1,13 +1,15 @@
-# Screenshot checklist (save to docs/screenshots/*.png)
+# Screenshots
 
-1. `main-menu.png` - main menu
-2. `mode-gridshot.png`, `mode-microshot.png`, `mode-tracking.png`, `mode-reflex.png` - one in-round shot per aim mode
-3. `training-center.png` - Training Center with bots
-4. `flick-optimizer.png` - Flick Optimizer results
-5. `coach-results.png` - AI Coach panel or the results screen
-6. `settings.png` - settings (try a non-default theme)
+The screenshots are captured automatically from the packaged game:
 
-Tip: 1920x1080, hide nothing, themes make good variety.
+```
+RayShot.exe -ShotTour -windowed -ResX=1920 -ResY=1080 -nosound -ShotDir=<folder>
+```
+
+It plays a scripted 3-minute tour (68 shots at 1920x1080, no input needed, nothing saved to your profile) and exits by itself.
+Results are in `docs/screenshots/` (all 68 as 1600 px JPG) and `docs/screenshots/hero/` (8 PNG heroes). What each shot shows is in `docs/SCREENSHOT_COVERAGE.md`.
+
+Worth recapturing by hand (optional): strafing bot, peek bot, scatter pellet spread, a flick target in flight (see `docs/SHOTS_REPORT.md`).
 
 ## 60-90 second video outline
 

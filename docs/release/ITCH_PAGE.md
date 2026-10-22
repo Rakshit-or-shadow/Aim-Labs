@@ -38,6 +38,14 @@ Requires Windows 10/11 64-bit and a DirectX 12 GPU.
 
 aim-trainer, fps, first-person, shooter, training, unreal-engine, singleplayer, skill, windows, cyberpunk
 
-## Media to add
+## Media
 
-See SCREENSHOT_CHECKLIST.md: main menu, four mode shots, Training Center, Flick Optimizer, Coach/results, settings, plus a 60-90 s trailer and a cover image (630x500).
+Upload these 5 screenshots (1920x1080 PNG, from `docs/screenshots/hero/`) in this order:
+
+1. `01-main-menu.png` (cover candidate)
+2. `03-gridshot-cyan.png`
+3. `04-tracking.png`
+4. `06-eagle-eye-scope.png`
+5. `08-ai-coach.png`
+
+The other hero images (`02-arena.png`, `05-results.png`, `07-microshot.png`) and the gallery in `docs/screenshots/` are extras. Still to make by hand: a 60-90 s trailer (outline in `SCREENSHOT_CHECKLIST.md`) and a 630x500 cover image (a crop of the main menu).
