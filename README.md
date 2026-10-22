@@ -5,8 +5,55 @@ All new code is C++ with the `GE` prefix. Hit detection never uses line traces:
 every shot is a ray tested against sphere hitboxes with `RayTraceMath::DoesIntersect`
 (the ray tracer math comes from the author's own C ray tracer).
 
-Status: everything builds, and a headless launch does not crash, but nothing has been seen on screen yet
-(see docs/OVERNIGHT2_REPORT.md for the test list).
+Status: v1.0 packaged for Windows. Visuals were not verified headlessly (see docs/RELEASE_REPORT.md).
+
+## Download
+
+Windows build (v1.0): https://github.com/Rakshit-or-shadow/Aim-Labs/releases
+
+Unzip `RayShot-v1.0-Windows.zip` and run `RayShot.exe`. The build is unsigned, so Windows SmartScreen may
+warn: click "More info" then "Run anyway". Requires Windows 10/11 64-bit and a DirectX 12 GPU.
+Release notes: `docs/release/RELEASE_NOTES_v1.0.md`.
+
+## Screenshots
+
+![Main menu](docs/screenshots/main-menu.png)
+![Gridshot](docs/screenshots/mode-gridshot.png)
+![Training Center](docs/screenshots/training-center.png)
+![Flick Optimizer](docs/screenshots/flick-optimizer.png)
+![Settings](docs/screenshots/settings.png)
+
+(Placeholders: the images are added to `docs/screenshots/` after capture.)
+
+## How to play
+
+Pick one of the four aim modes in the menu, or press T to go to the Training Center. WASD move, mouse look,
+left mouse fires, right mouse aims, R reloads, 1-5 select a weapon. The full controls tables are in the Controls section below.
+
+## How it works
+
+Every shot is a ray tested against sphere hitboxes. Unreal line traces are not used. With ray start `P`,
+normalized direction `d`, sphere center `S` and radius `r`, let `V = P - S`. A point on the ray is `P + t*d`, and
+it is on the sphere when `|V + t*d|^2 = r^2`, which gives the quadratic `A*t^2 + B*t + C = 0` with
+
+- `A = d . d`
+- `B = 2 (d . V)`
+- `C = V . V - r^2`
+
+The discriminant `B^2 - 4AC` decides the result: negative means a miss. Otherwise the roots
+`t = (-B -/+ sqrt(disc)) / 2A` are tried smaller first, and the first one that is >= 0 is the hit distance.
+The code is in `Source/GameEngine/RayTraceMath.h` (ported from the author's C ray tracer), and aim targets, bots and
+dummies all use it.
+
+## Build from source
+
+Requirements: Unreal Engine 5.8 and the Visual Studio C++ workload ("Game development with C++"). Close the Unreal Editor, then:
+
+```
+"C:/Program Files/Epic Games/UE_5.8/Engine/Build/BatchFiles/Build.bat" GameEngineEditor Win64 Development -Project="C:/Users/raksh/OneDrive/Documents/rayshot/GameEngine/GameEngine.uproject" -WaitMutex
+```
+
+Adjust the paths to your install, then open `GameEngine.uproject`. Packaging: see `docs/RELEASE_REPORT.md`.
 
 ## Features
 
@@ -78,7 +125,7 @@ Close the Unreal Editor first, then run (UE 5.8 installed in the default locatio
 "C:/Program Files/Epic Games/UE_5.8/Engine/Build/BatchFiles/Build.bat" GameEngineEditor Win64 Development -Project="C:/Users/raksh/OneDrive/Documents/rayshot/GameEngine/GameEngine.uproject" -WaitMutex
 ```
 
-Then open `GameEngine.uproject`. The startup map is `/Game/DemoTemplate/_Core/Lvl_IntroRoom`.
+Then open `GameEngine.uproject`. The startup map is `/Game/RayShot/Lvl_RayShot`.
 
 ## Credits
 

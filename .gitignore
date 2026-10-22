@@ -39,3 +39,8 @@ Desktop.ini
 *.key
 credentials.json
 secrets.json
+
+# Packaged builds
+../Builds/
+Builds/
+Build/Windows/
