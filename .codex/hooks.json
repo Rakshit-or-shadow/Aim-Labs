@@ -1,0 +1,121 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-commit.sh'",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-push.sh'",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-registry.sh'",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-write.sh'",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-read.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-assets.sh'",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-skill-change.sh'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\pre-compact.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\session-start.sh'",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\detect-gaps.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\log-agent.sh'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\log-agent-stop.sh'",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\raksh\\OneDrive\\Documents\\rayshot\\GameEngine\\.codex\\hooks\\validate-agent-artifact.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
