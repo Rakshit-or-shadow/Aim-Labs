@@ -1,14 +1,26 @@
 #include "GESaveGame.h"
 #include "GEAimModes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 namespace
 {
 	const TCHAR* GESaveSlotName = TEXT("GE_Profile");
 }
 
+bool UGESaveGame::IsTourMode()
+{
+	static const bool bTour = FParse::Param(FCommandLine::Get(), TEXT("ShotTour"));
+	return bTour;
+}
+
 UGESaveGame* UGESaveGame::LoadOrCreate()
 {
+	if (IsTourMode())
+	{
+		return Cast<UGESaveGame>(UGameplayStatics::CreateSaveGameObject(UGESaveGame::StaticClass())); // never touch the real profile
+	}
 	if (UGameplayStatics::DoesSaveGameExist(GESaveSlotName, 0))
 	{
 		if (UGESaveGame* Loaded = Cast<UGESaveGame>(UGameplayStatics::LoadGameFromSlot(GESaveSlotName, 0)))
@@ -21,6 +33,10 @@ UGESaveGame* UGESaveGame::LoadOrCreate()
 
 bool UGESaveGame::Save()
 {
+	if (IsTourMode())
+	{
+		return true; // -ShotTour: nothing is saved
+	}
 	return UGameplayStatics::SaveGameToSlot(this, GESaveSlotName, 0);
 }
 

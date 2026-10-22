@@ -7,11 +7,15 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerStart.h"
 #include "EngineUtils.h"
+#include "GEShotTour.h"
+#include "GESaveGame.h"
 
 AGEGameMode::AGEGameMode()
 {
 	// Draw the crosshair HUD by default. A Blueprint child can still override this.
 	HUDClass = AGEHUD::StaticClass();
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 
 	// Pawn and controller classes are left to the Blueprint child
 	// (BP_FirstPersonCharacter / BP_FirstPersonPlayerController), because the C++
@@ -72,5 +76,24 @@ void AGEGameMode::BeginPlay()
 			}
 		}
 			break; // only the first start
+	}
+}
+
+void AGEGameMode::EndPlay(const EEndPlayReason::Type Reason)
+{
+	ShotTour.Reset();
+	Super::EndPlay(Reason);
+}
+
+void AGEGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (UGESaveGame::IsTourMode())
+	{
+		if (!ShotTour.IsValid())
+		{
+			ShotTour = MakeShared<FGEShotTour>(this);
+		}
+		ShotTour->Tick(DeltaSeconds);
 	}
 }

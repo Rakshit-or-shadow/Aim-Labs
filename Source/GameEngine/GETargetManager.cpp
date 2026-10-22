@@ -360,6 +360,10 @@ void AGETargetManager::StartRound(EGEAimMode NewMode)
 		TryPlace(i, false);
 	}
 
+	if (TourRoundLength > 0.0f && RoundLength > 0.0f)
+	{
+		RoundLength = TourRoundLength; // -ShotTour only: short rounds
+	}
 	TimeLeft = RoundLength;
 }
 

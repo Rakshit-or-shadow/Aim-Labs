@@ -317,7 +317,7 @@ void AGEHUD::DrawHUD()
 	NowTime = GetWorld()->GetTimeSeconds();
 
 	// Where is the mouse, and did it move this frame?
-	bHasMouse = PlayerOwner && PlayerOwner->GetMousePosition(MouseX, MouseY);
+	bHasMouse = PlayerOwner && !UGESaveGame::IsTourMode() && PlayerOwner->GetMousePosition(MouseX, MouseY); // -ShotTour: the real mouse must not hover buttons
 	bMouseMoved = bHasMouse && (FMath::Abs(MouseX - LastMouseX) > 0.5f || FMath::Abs(MouseY - LastMouseY) > 0.5f);
 
 	// A new screen appeared: restart its intro animation.

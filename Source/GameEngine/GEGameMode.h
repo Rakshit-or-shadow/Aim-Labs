@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+struct FGEShotTour;
+
 #include "GEGameMode.generated.h"
 
 /**
@@ -23,8 +25,14 @@ public:
 	/** The aim-trainer manager (spawned in the intro room), or null in other levels. */
 	class AGETargetManager* GetAimManager() const { return AimManager; }
 
+	virtual void Tick(float DeltaSeconds) override;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+
+	/** -ShotTour only: the scripted screenshot tour (null in normal play). */
+	TSharedPtr<FGEShotTour> ShotTour;
 
 	/** Aim trainer: how far (cm, along world Y) from the player start the aim arena is built. Negative = -Y. */
 	UPROPERTY(EditDefaultsOnly, Category = "GE|Aim")

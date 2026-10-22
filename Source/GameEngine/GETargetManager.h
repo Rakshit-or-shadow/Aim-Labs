@@ -73,6 +73,9 @@ public:
 	/** How far in front of the wall (cm) the target plane sits. Must be more than the biggest radius + margin. */
 	UPROPERTY(EditAnywhere, Category = "Aim") double WallInset = 120.0;
 
+	/** -ShotTour only: if > 0, timed rounds last this many seconds. 0 = normal. */
+	float TourRoundLength = 0.0f;
+
 	/** Fired when a round finishes by itself. */
 	UPROPERTY(BlueprintAssignable, Category = "Aim")
 	FGEOnAimRoundFinished OnRoundFinished;

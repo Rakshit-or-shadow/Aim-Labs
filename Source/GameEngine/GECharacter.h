@@ -137,6 +137,7 @@ protected:
 	float CurrentHealth = 0.0f;
 
 private:
+	friend struct FGEShotTour;
 	/** Copies the Movement struct into CharacterMovement. */
 	void ApplyMovementSettings();
 	/** Creates the runtime input actions and mapping context. */

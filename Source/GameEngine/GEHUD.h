@@ -68,6 +68,8 @@ class GAMEENGINE_API AGEHUD : public AHUD
 
 	/** The UI component library draws through this HUD's private text helpers. */
 	friend struct FGEUIKit;
+	/** The -ShotTour screenshot driver steers the screen flow directly. */
+	friend struct FGEShotTour;
 
 public:
 	AGEHUD();

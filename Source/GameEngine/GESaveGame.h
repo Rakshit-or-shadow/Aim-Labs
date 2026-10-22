@@ -46,6 +46,8 @@ class GAMEENGINE_API UGESaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
+	/** True when the game was started with -ShotTour: a fresh profile is used and nothing is written to disk. */
+	static bool IsTourMode();
 	/** Loads the profile from disk, or makes a new empty one. */
 	static UGESaveGame* LoadOrCreate();
 	/** Writes the profile to disk. Returns success. */
